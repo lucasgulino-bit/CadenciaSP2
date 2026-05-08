@@ -1359,7 +1359,7 @@ export default function App() {
                           key={h}
                           style={{
                             ...thS,
-                            textAlign: (i === 4 ? "center" : "left") as const,
+                            textAlign: i === 4 ? "center" as const : "left" as const,
                             padding: "10px 16px",
                           }}
                         >
