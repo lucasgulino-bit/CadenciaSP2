@@ -52,7 +52,7 @@ function getWeeks() {
   const now = new Date();
   const mon = new Date(now);
   mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  for (let i = -2; i <= 3; i++) {
+  for (let i = -4; i <= 8; i++) {
     const s = new Date(mon); s.setDate(mon.getDate() + i * 7);
     const e = new Date(s);   e.setDate(s.getDate() + 4);
     const p  = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -62,7 +62,7 @@ function getWeeks() {
   return weeks;
 }
 const WEEKS = getWeeks();
-const CURRENT_WEEK = WEEKS[2].key;
+const CURRENT_WEEK = WEEKS[4].key;
 
 const T: any = { fontFamily: "'Trebuchet MS', sans-serif" };
 const thS: any = { padding:"8px 12px", fontSize:11, fontWeight:700, textAlign:"center" as const, whiteSpace:"nowrap" as const, letterSpacing:1 };
