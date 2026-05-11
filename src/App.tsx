@@ -141,13 +141,18 @@ export default function App() {
   const exec = EXECUTIVES.find(e => e.name === selectedExec);
   const wk   = WEEKS.find(w => w.key === dashWeek) || WEEKS[2];
 
-  const EnvCell = ({ col }: { col: string }) => (
-    <input value={envInputs[col] ? maskCurrency(envInputs[col]) : ""}
-      onChange={e => setEnvInputs({...envInputs, [col]: e.target.value.replace(/[^\d]/g,"")})}
-      placeholder="—"
-      style={{ width:"100%", padding:"5px 8px", background:"#2a3e2a", border:"1px solid #c8b84a",
-        borderRadius:2, color:"#c8b84a", fontSize:13, fontWeight:700, textAlign:"right" as const, outline:"none", boxSizing:"border-box" as const }} />
-  );
+  const EnvCell = ({ col }: { col: string }) => {
+    const [localVal, setLocalVal] = useState(envInputs[col] || "");
+    return (
+      <input
+        value={localVal ? maskCurrency(localVal) : ""}
+        onChange={e => setLocalVal(e.target.value.replace(/[^\d]/g, ""))}
+        onBlur={() => setEnvInputs((prev: any) => ({...prev, [col]: localVal}))}
+        placeholder="—"
+        style={{ width:"100%", padding:"5px 8px", background:"#2a3e2a", border:"1px solid #c8b84a",
+          borderRadius:2, color:"#c8b84a", fontSize:13, fontWeight:700, textAlign:"right" as const, outline:"none", boxSizing:"border-box" as const }} />
+    );
+  };
 
   // LOGIN
   if (screen === "login") return (
