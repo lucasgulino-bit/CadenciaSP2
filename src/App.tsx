@@ -104,6 +104,7 @@ export default function App() {
   const [dashTab, setDashTab]       = useState("forecast");
   const [filterExec, setFilterExec] = useState("Todos");
   const [filterPlat, setFilterPlat] = useState("Todas");
+  const [filterClient, setFilterClient] = useState("Todos");
 
   useEffect(() => {
     onValue(ref(db, "cadence_v2"),   snap => { if (snap.exists()) setAllData(snap.val()); });
@@ -462,9 +463,19 @@ export default function App() {
                   {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
-              {(filterExec !== "Todos" || filterPlat !== "Todas") && (
+              <div>
+                <label style={{ display:"block", fontSize:10, color:"#888", letterSpacing:2, textTransform:"uppercase" as const, marginBottom:5 }}>Cliente</label>
+                <select value={filterClient} onChange={e => setFilterClient(e.target.value)}
+                  style={{ padding:"8px 12px", border:"1.5px solid #ddd", borderRadius:3, fontSize:13, color:"#333", background:"#fff", outline:"none", ...T }}>
+                  <option value="Todos">Todos</option>
+                  {Array.from(new Set(allOpps.map((o:any) => o.client).filter(Boolean))).sort().map((cl:any) => (
+                    <option key={cl} value={cl}>{cl}</option>
+                  ))}
+                </select>
+              </div>
+              {(filterExec !== "Todos" || filterPlat !== "Todas" || filterClient !== "Todos") && (
                 <div style={{ display:"flex", alignItems:"flex-end" }}>
-                  <button onClick={() => { setFilterExec("Todos"); setFilterPlat("Todas"); }}
+                  <button onClick={() => { setFilterExec("Todos"); setFilterPlat("Todas"); setFilterClient("Todos"); }}
                     style={{ padding:"8px 14px", background:"#fff", border:"1.5px solid #ddd", borderRadius:3, color:"#888", fontSize:12, cursor:"pointer", ...T }}>
                     ✕ Limpar filtros
                   </button>
@@ -472,7 +483,7 @@ export default function App() {
               )}
               <div style={{ marginLeft:"auto", display:"flex", alignItems:"flex-end" }}>
                 <span style={{ fontSize:12, color:"#aaa", paddingBottom:10 }}>
-                  {allOpps.filter((o:any) => (filterExec==="Todos"||o.exec===filterExec) && (filterPlat==="Todas"||o.platform===filterPlat)).length} oportunidade(s)
+                  {allOpps.filter((o:any) => (filterExec==="Todos"||o.exec===filterExec) && (filterPlat==="Todas"||o.platform===filterPlat) && (filterClient==="Todos"||o.client===filterClient)).length} oportunidade(s)
                 </span>
               </div>
             </div>
@@ -484,7 +495,7 @@ export default function App() {
               </div>
             ) : (() => {
               const filtered = allOpps
-                .filter((o:any) => (filterExec==="Todos" || o.exec===filterExec) && (filterPlat==="Todas" || o.platform===filterPlat))
+                .filter((o:any) => (filterExec==="Todos" || o.exec===filterExec) && (filterPlat==="Todas" || o.platform===filterPlat) && (filterClient==="Todos" || o.client===filterClient))
                 .sort((a:any, b:any) => parse(b.value) - parse(a.value));
               return filtered.length === 0 ? (
                 <div style={{ padding:"32px", textAlign:"center" as const, color:"#bbb", background:"#fff", border:"1.5px solid #e8e4d0", borderRadius:4 }}>
