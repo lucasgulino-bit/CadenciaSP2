@@ -2,6 +2,25 @@ import { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, onValue } from "firebase/database";
 
+// Inject print styles once
+const PRINT_STYLE = `
+@media print {
+  body * { visibility: hidden !important; }
+  #pdf-root, #pdf-root * { visibility: visible !important; }
+  #pdf-root { position: fixed; top: 0; left: 0; width: 100%; padding: 16px; box-sizing: border-box; font-family: 'Trebuchet MS', sans-serif; }
+  #pdf-root button { display: none !important; }
+  #pdf-root select { display: none !important; }
+  #pdf-root input { border: none !important; background: transparent !important; color: #c8b84a !important; }
+  @page { size: A4 landscape; margin: 10mm; }
+}
+`;
+if (!document.getElementById("cadencia-print-style")) {
+  const s = document.createElement("style");
+  s.id = "cadencia-print-style";
+  s.innerHTML = PRINT_STYLE;
+  document.head.appendChild(s);
+}
+
 // ─── COLE AQUI AS CONFIGURAÇÕES DO SEU FIREBASE ───────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyCNg2lVSkF1aL4pa7MvUXvrEiIgUpmCaIQ",
@@ -136,8 +155,8 @@ export default function App() {
   const colTotal = (col: string) => weekData.reduce((s,e) => s + parse((e.v as any)[col]), 0);
   const getEnv   = (col: string) => parse(envInputs[col]);
   const allOpps: any[]  = weekData.reduce((acc: any[], e) => acc.concat((e.opps as any[]).filter((o:any) => o.client).map((o:any) => ({...o, exec: e.name}))), []);
-  const totalBG     = colTotal("bg") + colTotal("bg_paytv") + colTotal("bg_digital");
-  const totalBGHigh = colTotal("bg_high") + colTotal("bg_high_paytv") + colTotal("bg_high_digital");
+  const totalBG     = colTotal("bg") + colTotal("bg_digital");
+  const totalBGHigh = colTotal("bg_high") + colTotal("bg_high_digital");
   const exec = EXECUTIVES.find(e => e.name === selectedExec);
   const wk   = WEEKS.find(w => w.key === dashWeek) || WEEKS[2];
 
@@ -313,9 +332,14 @@ export default function App() {
   }
 
   // DASHBOARD
+  function exportPDF() {
+    setDashTab("forecast");
+    setTimeout(() => window.print(), 300);
+  }
+
   return (
     <div style={{ minHeight:"100vh", background:"#f7f6f0", ...T, padding:"28px 20px" }}>
-      <div style={{ maxWidth:1200, margin:"0 auto" }}>
+      <div id="pdf-root" style={{ maxWidth:1200, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap" as const, gap:12 }}>
           <div>
             <div style={{ display:"inline-block", background:"#4a7c3f", color:"#fff", fontSize:10, letterSpacing:4, padding:"3px 12px", textTransform:"uppercase" as const, marginBottom:8 }}>Regional SP</div>
@@ -326,6 +350,7 @@ export default function App() {
               style={{ padding:"8px 12px", border:"1.5px solid #ddd", borderRadius:3, fontSize:12, color:"#333", background:"#fff", outline:"none" }}>
               {WEEKS.map(w => <option key={w.key} value={w.key}>{w.label} · {w.month}</option>)}
             </select>
+            <button onClick={exportPDF} style={{ padding:"8px 14px", background:"#4a7c3f", border:"none", borderRadius:3, color:"#fff", fontSize:12, cursor:"pointer", fontWeight:700, ...T }}>🖨️ Exportar PDF</button>
             <button onClick={() => setScreen("login")} style={{ padding:"8px 14px", background:"#fff", border:"1.5px solid #ddd", borderRadius:3, color:"#888", fontSize:12, cursor:"pointer", ...T }}>← Voltar</button>
           </div>
         </div>
@@ -345,8 +370,8 @@ export default function App() {
           <>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:14 }}>
               {[
-                { title:"PREVISÃO",      cols:["bg","bg_paytv","bg_digital"],                heads:["BG","Pay TV","Digital"] },
-                { title:"PREVISÃO HIGH", cols:["bg_high","bg_high_paytv","bg_high_digital"], heads:["BG HIGH","PayTV HIGH","Digital HIGH"] },
+                { title:"PREVISÃO",      cols:["bg","bg_paytv","bg_digital"],                heads:["BG","Pay TV","Digital"],                  totalCols:["bg","bg_digital"] },
+                { title:"PREVISÃO HIGH", cols:["bg_high","bg_high_paytv","bg_high_digital"], heads:["BG HIGH","PayTV HIGH","Digital HIGH"],     totalCols:["bg_high","bg_high_digital"] },
               ].map(panel => (
                 <div key={panel.title} style={{ background:"#fff", border:"2px solid #c8b84a", borderRadius:4, overflow:"hidden" }}>
                   <div style={{ background:"#c8b84a", padding:"9px 16px", textAlign:"center" as const }}>
@@ -377,7 +402,7 @@ export default function App() {
                       </tr>
                       <tr style={{ background:"#f0ede0" }}>
                         <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
-                        <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.cols.reduce((s,c)=>s+colTotal(c),0))}</td>
+                        <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotal(c),0))}</td>
                       </tr>
                       <tr style={{ background:"#1a2e1a" }}>
                         <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
