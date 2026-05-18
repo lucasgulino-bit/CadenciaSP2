@@ -69,8 +69,12 @@ function maskCurrency(raw: any) {
 function getWeeks() {
   const weeks: any[] = [];
   const now = new Date();
+  // Get Monday of CURRENT week (not next week)
+  const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diffToMon = day === 0 ? -6 : 1 - day; // Sunday goes back 6, others go back to Monday
   const mon = new Date(now);
-  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  mon.setDate(now.getDate() + diffToMon);
+  mon.setHours(0,0,0,0);
   for (let i = -4; i <= 8; i++) {
     const s = new Date(mon); s.setDate(mon.getDate() + i * 7);
     const e = new Date(s);   e.setDate(s.getDate() + 4);
