@@ -545,6 +545,18 @@ export default function App() {
                               <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
                               <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotalNext(c),0))}</td>
                             </tr>
+                          <tr style={{ background:"#1a2e1a" }}>
+                              <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
+                              {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={`next_${c}`} /></td>)}
+                            </tr>
+                            <tr style={{ background:"#0f1f0f" }}>
+                              <td colSpan={4} style={{ padding:"8px 10px" }}>
+                                <button onClick={handleSaveEnviado}
+                                  style={{ width:"100%", padding:"7px", background:envSaved?"#4a7c3f":"#c8b84a", border:"none", borderRadius:2, color:envSaved?"#fff":"#1a2e1a", fontSize:12, fontWeight:700, cursor:"pointer", ...T }}>
+                                  {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
+                                </button>
+                              </td>
+                            </tr>
                           </tfoot>
                         </table>
                       </div>
