@@ -30,7 +30,7 @@ const firebaseConfig = {
   storageBucket: "cadencia-sp.firebasestorage.app",
   messagingSenderId: "226124975510",
   appId: "1:226124975510:web:d8f261d58d61777dd361b7",
-};
+};;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const app = initializeApp(firebaseConfig);
@@ -453,7 +453,7 @@ export default function App() {
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom: isLastTwoWeeksOfMonth(dashWeek)?24:14 }}>
               {[
                 { title:`PREVISÃO — ${getCurrentMonthName(dashWeek)}`,      cols:["bg","bg_paytv","bg_digital"],                heads:["BG","Pay TV","Digital"],              totalCols:["bg","bg_digital"],                dataKey:"values" },
-                { title:`PREVISÃO HIGH — ${getCurrentMonthName(dashWeek)}`, cols:["bg_high","bg_high_paytv","bg_high_digital"],, totalCols:["bg_high","bg_high_digital"],       dataKey:"values" },
+                { title:`PREVISÃO HIGH — ${getCurrentMonthName(dashWeek)}`, cols:["bg_high","bg_high_paytv","bg_high_digital"], heads:["BG HIGH","PayTV HIGH","Digital HIGH"], totalCols:["bg_high","bg_high_digital"],       dataKey:"values" },
               ].map(panel => (
                 <div key={panel.title} style={{ background:"#fff", border:"2px solid #c8b84a", borderRadius:4, overflow:"hidden" }}>
                   <div style={{ background:"#c8b84a", padding:"9px 16px", textAlign:"center" as const }}>
