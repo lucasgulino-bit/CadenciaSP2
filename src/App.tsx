@@ -545,7 +545,16 @@ export default function App() {
                               );
                             })}
                           </tbody>
-                       <tr style={{ background:"#1a2e1a" }}>
+                          <tfoot>
+                            <tr style={{ background:"#4a7c3f" }}>
+                              <td style={{ ...tdS(false), color:"#fff", fontWeight:700 }}>TOTAL</td>
+                              {panel.cols.map(c => <td key={c} style={{ ...tdS(true), color:"#fff", fontWeight:700 }}>{fmtFull(colTotalNext(c))}</td>)}
+                            </tr>
+                            <tr style={{ background:"#f0ede0" }}>
+                              <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
+                              <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotalNext(c),0))}</td>
+                            </tr>
+                            <tr style={{ background:"#1a2e1a" }}>
                               <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
                               {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={`next_${c}`} /></td>)}
                             </tr>
@@ -556,15 +565,6 @@ export default function App() {
                                   {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
                                 </button>
                               </td>
-                            </tr>
-                          </tfoot>
-                            <tr style={{ background:"#4a7c3f" }}>
-                              <td style={{ ...tdS(false), color:"#fff", fontWeight:700 }}>TOTAL</td>
-                              {panel.cols.map(c => <td key={c} style={{ ...tdS(true), color:"#fff", fontWeight:700 }}>{fmtFull(colTotalNext(c))}</td>)}
-                            </tr>
-                            <tr style={{ background:"#f0ede0" }}>
-                              <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
-                              <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotalNext(c),0))}</td>
                             </tr>
                           </tfoot>
                         </table>
