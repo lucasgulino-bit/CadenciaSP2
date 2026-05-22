@@ -57,7 +57,8 @@ const PLATFORM_COLOR: Record<string, any> = {
   "Digital":           { bg: "#edfff0", border: "#4a9c5f", text: "#1a5c2a" },
 };
 
-const emptyOpp = () => ({ id: Date.now() + Math.random(), platform: "TV Aberta", client: "", detail: "", value: "" });
+const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const emptyOpp = () => ({ id: Date.now() + Math.random(), platform: "TV Aberta", client: "", detail: "", value: "", month: MONTHS[new Date().getMonth()] });
 const parse    = (v: any) => parseFloat(String(v || "").replace(/[^\d]/g, "")) || 0;
 const fmtFull  = (n: number) => n === 0 ? "—" : "R$ " + n.toLocaleString("pt-BR");
 function maskCurrency(raw: any) {
@@ -141,6 +142,7 @@ export default function App() {
   const [filterExec, setFilterExec] = useState("Todos");
   const [filterPlat, setFilterPlat] = useState("Todas");
   const [filterClient, setFilterClient] = useState("Todos");
+  const [filterMonth, setFilterMonth] = useState("Todos");
 
   useEffect(() => {
     onValue(ref(db, "cadence_v2"),   snap => { if (snap.exists()) setAllData(snap.val()); });
@@ -366,6 +368,13 @@ export default function App() {
                       </div>
                     </div>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 2fr 1fr" }}>
+                      <div style={{ padding:"10px 14px", borderRight:"1px solid #f0ede0" }}>
+                        <div style={{ fontSize:10, color:"#aaa", letterSpacing:2, textTransform:"uppercase" as const, marginBottom:5 }}>Mês</div>
+                        <select value={opp.month || MONTHS[new Date().getMonth()]} onChange={e => updateOpp(opp.id,"month",e.target.value)}
+                          style={{ width:"100%", padding:"6px 8px", border:"1.5px solid #ebe8d8", borderRadius:3, fontSize:13, color:"#333", outline:"none", background:"#fffff8", boxSizing:"border-box" as const }}>
+                          {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      </div>
                       {[
                         {field:"client",label:"Cliente",      placeholder:"Nome do cliente",           right:false,green:false},
                         {field:"value", label:"Valor",        placeholder:"R$ 0",                      right:true, green:true },
@@ -545,18 +554,6 @@ export default function App() {
                               <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
                               <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotalNext(c),0))}</td>
                             </tr>
-                          <tr style={{ background:"#1a2e1a" }}>
-                              <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
-                              {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={`next_${c}`} /></td>)}
-                            </tr>
-                            <tr style={{ background:"#0f1f0f" }}>
-                              <td colSpan={4} style={{ padding:"8px 10px" }}>
-                                <button onClick={handleSaveEnviado}
-                                  style={{ width:"100%", padding:"7px", background:envSaved?"#4a7c3f":"#c8b84a", border:"none", borderRadius:2, color:envSaved?"#fff":"#1a2e1a", fontSize:12, fontWeight:700, cursor:"pointer", ...T }}>
-                                  {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
-                                </button>
-                              </td>
-                            </tr>
                           </tfoot>
                         </table>
                       </div>
@@ -607,6 +604,14 @@ export default function App() {
                 </select>
               </div>
               <div>
+                <label style={{ display:"block", fontSize:10, color:"#888", letterSpacing:2, textTransform:"uppercase" as const, marginBottom:5 }}>Mês</label>
+                <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)}
+                  style={{ padding:"8px 12px", border:"1.5px solid #ddd", borderRadius:3, fontSize:13, color:"#333", background:"#fff", outline:"none", ...T }}>
+                  <option value="Todos">Todos</option>
+                  {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
                 <label style={{ display:"block", fontSize:10, color:"#888", letterSpacing:2, textTransform:"uppercase" as const, marginBottom:5 }}>Cliente</label>
                 <select value={filterClient} onChange={e => setFilterClient(e.target.value)}
                   style={{ padding:"8px 12px", border:"1.5px solid #ddd", borderRadius:3, fontSize:13, color:"#333", background:"#fff", outline:"none", ...T }}>
@@ -616,9 +621,9 @@ export default function App() {
                   ))}
                 </select>
               </div>
-              {(filterExec !== "Todos" || filterPlat !== "Todas" || filterClient !== "Todos") && (
+              {(filterExec !== "Todos" || filterPlat !== "Todas" || filterClient !== "Todos" || filterMonth !== "Todos") && (
                 <div style={{ display:"flex", alignItems:"flex-end" }}>
-                  <button onClick={() => { setFilterExec("Todos"); setFilterPlat("Todas"); setFilterClient("Todos"); }}
+                  <button onClick={() => { setFilterExec("Todos"); setFilterPlat("Todas"); setFilterClient("Todos"); setFilterMonth("Todos"); }}
                     style={{ padding:"8px 14px", background:"#fff", border:"1.5px solid #ddd", borderRadius:3, color:"#888", fontSize:12, cursor:"pointer", ...T }}>
                     ✕ Limpar filtros
                   </button>
@@ -626,7 +631,7 @@ export default function App() {
               )}
               <div style={{ marginLeft:"auto", display:"flex", alignItems:"flex-end" }}>
                 <span style={{ fontSize:12, color:"#aaa", paddingBottom:10 }}>
-                  {allOpps.filter((o:any) => (filterExec==="Todos"||o.exec===filterExec) && (filterPlat==="Todas"||o.platform===filterPlat) && (filterClient==="Todos"||o.client===filterClient)).length} oportunidade(s)
+                  {allOpps.filter((o:any) => (filterExec==="Todos"||o.exec===filterExec) && (filterPlat==="Todas"||o.platform===filterPlat) && (filterClient==="Todos"||o.client===filterClient) && (filterMonth==="Todos"||o.month===filterMonth)).length} oportunidade(s)
                 </span>
               </div>
             </div>
@@ -638,7 +643,7 @@ export default function App() {
               </div>
             ) : (() => {
               const filtered = allOpps
-                .filter((o:any) => (filterExec==="Todos" || o.exec===filterExec) && (filterPlat==="Todas" || o.platform===filterPlat) && (filterClient==="Todos" || o.client===filterClient))
+                .filter((o:any) => (filterExec==="Todos" || o.exec===filterExec) && (filterPlat==="Todas" || o.platform===filterPlat) && (filterClient==="Todos" || o.client===filterClient) && (filterMonth==="Todos" || o.month===filterMonth))
                 .sort((a:any, b:any) => parse(b.value) - parse(a.value));
               return filtered.length === 0 ? (
                 <div style={{ padding:"32px", textAlign:"center" as const, color:"#bbb", background:"#fff", border:"1.5px solid #e8e4d0", borderRadius:4 }}>
@@ -649,8 +654,8 @@ export default function App() {
                   <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
                     <thead>
                       <tr style={{ background:"#f7f5e8", borderBottom:"2px solid #e8e4d0" }}>
-                        {["Executivo","Plataforma","Cliente","Detalhamento","Valor ↓"].map((h,i) => (
-                          <th key={h} style={{ ...thS, textAlign: i===4 ? ("center" as const) : ("left" as const), padding:"10px 16px" }}>{h}</th>
+                        {["Executivo","Mês","Plataforma","Cliente","Detalhamento","Valor ↓"].map((h,i) => (
+                          <th key={h} style={{ ...thS, textAlign: i===5 ? ("center" as const) : ("left" as const), padding:"10px 16px" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -660,6 +665,7 @@ export default function App() {
                         return (
                           <tr key={i} style={{ background:i%2===0?"#fafaf5":"#fff", borderBottom:"1px solid #f0ede0" }}>
                             <td style={{ padding:"10px 16px", fontSize:13, fontWeight:600, color:"#333", whiteSpace:"nowrap" as const }}>{o.exec.split(" ")[0]} {o.exec.split(" ")[1]}</td>
+                            <td style={{ padding:"10px 12px", fontSize:12, color:"#666", whiteSpace:"nowrap" as const }}>{o.month||"—"}</td>
                             <td style={{ padding:"10px 12px" }}>
                               <span style={{ padding:"3px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:c.bg, color:c.text, border:`1px solid ${c.border}`, whiteSpace:"nowrap" as const }}>{o.platform}</span>
                             </td>
