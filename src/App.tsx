@@ -545,7 +545,7 @@ export default function App() {
                               );
                             })}
                           </tbody>
-                        <tr style={{ background:"#1a2e1a" }}>
+                       <tr style={{ background:"#1a2e1a" }}>
                               <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
                               {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={`next_${c}`} /></td>)}
                             </tr>
