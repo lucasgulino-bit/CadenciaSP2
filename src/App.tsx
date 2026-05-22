@@ -545,7 +545,19 @@ export default function App() {
                               );
                             })}
                           </tbody>
-                          <tfoot>
+                        <tr style={{ background:"#1a2e1a" }}>
+                              <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
+                              {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={`next_${c}`} /></td>)}
+                            </tr>
+                            <tr style={{ background:"#0f1f0f" }}>
+                              <td colSpan={4} style={{ padding:"8px 10px" }}>
+                                <button onClick={handleSaveEnviado}
+                                  style={{ width:"100%", padding:"7px", background:envSaved?"#4a7c3f":"#c8b84a", border:"none", borderRadius:2, color:envSaved?"#fff":"#1a2e1a", fontSize:12, fontWeight:700, cursor:"pointer", ...T }}>
+                                  {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
+                                </button>
+                              </td>
+                            </tr>
+                          </tfoot>
                             <tr style={{ background:"#4a7c3f" }}>
                               <td style={{ ...tdS(false), color:"#fff", fontWeight:700 }}>TOTAL</td>
                               {panel.cols.map(c => <td key={c} style={{ ...tdS(true), color:"#fff", fontWeight:700 }}>{fmtFull(colTotalNext(c))}</td>)}
