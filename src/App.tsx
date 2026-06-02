@@ -90,13 +90,16 @@ const CURRENT_WEEK = WEEKS[4].key;
 
 // Returns true if the given week key is one of the last 2 Mondays of its month
 function isLastTwoWeeksOfMonth(weekKey: string): boolean {
-  const d = new Date(weekKey.replace("w_", ""));
-  const month = d.getMonth();
-  const year  = d.getFullYear();
+  // Use local date parsing to avoid timezone issues
+  const parts = weekKey.replace("w_", "").split("-");
+  const year  = parseInt(parts[0]);
+  const month = parseInt(parts[1]) - 1;
+  const day   = parseInt(parts[2]);
+  const d = new Date(year, month, day);
+
   // Find all Mondays in this month
   const mondays: Date[] = [];
   const cur = new Date(year, month, 1);
-  // advance to first Monday
   const dayOfWeek = cur.getDay();
   const daysToMon = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 0 : 8 - dayOfWeek;
   cur.setDate(cur.getDate() + daysToMon);
@@ -104,18 +107,23 @@ function isLastTwoWeeksOfMonth(weekKey: string): boolean {
     mondays.push(new Date(cur));
     cur.setDate(cur.getDate() + 7);
   }
-  const lastTwo = mondays.slice(-2).map(m => m.toISOString().slice(0,10));
-  return lastTwo.includes(d.toISOString().slice(0,10));
+  const lastTwo = mondays.slice(-2).map(m => {
+    const mm = m.getMonth()+1; const dd = m.getDate();
+    return `${m.getFullYear()}-${mm<10?'0'+mm:mm}-${dd<10?'0'+dd:dd}`;
+  });
+  const keyDate = `${year}-${(month+1)<10?'0'+(month+1):(month+1)}-${day<10?'0'+day:day}`;
+  return lastTwo.includes(keyDate);
 }
 
 function getNextMonthName(weekKey: string): string {
-  const d = new Date(weekKey.replace("w_", ""));
-  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  const parts = weekKey.replace("w_", "").split("-");
+  const next = new Date(parseInt(parts[0]), parseInt(parts[1]), 1); // month+1-1 = month as index
   return next.toLocaleDateString("pt-BR", { month: "long" }).toUpperCase();
 }
 
 function getCurrentMonthName(weekKey: string): string {
-  const d = new Date(weekKey.replace("w_", ""));
+  const parts = weekKey.replace("w_", "").split("-");
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
   return d.toLocaleDateString("pt-BR", { month: "long" }).toUpperCase();
 }
 
