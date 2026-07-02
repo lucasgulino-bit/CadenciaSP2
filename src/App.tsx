@@ -168,7 +168,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    onValue(ref(db, "cadence_v2"),  snap => { if (snap.exists()) setAllData(snap.val()); setLoading(false); });
+    onValue(ref(db, "cadence_v2"),  snap => {
+      if (snap.exists()) setAllData(snap.val());
+      setLoading(false);
+    });
     onValue(ref(db, "cadence_env"), snap => { if (snap.exists()) setEnviado(snap.val()); });
   }, []);
 
