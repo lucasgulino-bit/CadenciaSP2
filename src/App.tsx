@@ -96,7 +96,6 @@ function isLastTwoWeeksOfMonth(weekKey: string): boolean {
   const year  = parseInt(parts[0]);
   const month = parseInt(parts[1]) - 1;
   const day   = parseInt(parts[2]);
-  const d = new Date(year, month, day);
 
   // Find all Mondays in this month
   const mondays: Date[] = [];
@@ -116,9 +115,22 @@ function isLastTwoWeeksOfMonth(weekKey: string): boolean {
   return lastTwo.includes(keyDate);
 }
 
+// Returns true if the week (Mon–Fri) contains the 1st of the next month
+// In this case we show ONLY the next month block, hiding the current month
+function isNextMonthWeek(weekKey: string): boolean {
+  const parts = weekKey.replace("w_", "").split("-");
+  const year  = parseInt(parts[0]);
+  const month = parseInt(parts[1]) - 1;
+  const day   = parseInt(parts[2]);
+  // Friday of this week = Monday + 4
+  const fri = new Date(year, month, day + 4);
+  // If Friday is in a different month than Monday, the week crosses into next month
+  return fri.getMonth() !== month;
+}
+
 function getNextMonthName(weekKey: string): string {
   const parts = weekKey.replace("w_", "").split("-");
-  const next = new Date(parseInt(parts[0]), parseInt(parts[1]), 1); // month+1-1 = month as index
+  const next = new Date(parseInt(parts[0]), parseInt(parts[1]), 1);
   return next.toLocaleDateString("pt-BR", { month: "long" }).toUpperCase();
 }
 
@@ -321,36 +333,38 @@ export default function App() {
           <StepBar />
           {step===1 && (
             <>
-              {/* Previsão mês atual */}
-              <div style={{ background:"#fff", border:"2px solid #c8b84a", borderRadius:4, overflow:"hidden", marginBottom:16 }}>
-                <div style={{ background:"#c8b84a", padding:"10px 20px" }}>
-                  <span style={{ fontWeight:700, fontSize:13, color:"#1a2e1a", letterSpacing:1 }}>
-                    PREVISÃO — {getCurrentMonthName(selectedWeek)}
-                  </span>
-                </div>
-                {exec?.fields.map((field, i) => (
-                  <div key={field} style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom: i<exec.fields.length-1?"1px solid #f0ede0":"none" }}>
-                    <div style={{ padding:"14px 20px", display:"flex", alignItems:"center", background: i%2===0?"#fafaf5":"#fff" }}>
-                      <span style={{ fontSize:13, color:"#444", fontWeight:600 }}>{FIELD_LABELS[field]}</span>
-                    </div>
-                    <div style={{ padding:"8px 16px", borderLeft:"1px solid #f0ede0", background: i%2===0?"#fafaf5":"#fff" }}>
-                      <input value={values[field]?maskCurrency(values[field]):""}
-                        onChange={e => setValues({...values,[field]:e.target.value.replace(/[^\d]/g,"")})}
-                        placeholder="R$ 0"
-                        style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #e0ddc8", borderRadius:3, fontSize:14, color:"#2a5c1a", fontWeight:700, outline:"none", boxSizing:"border-box" as const, textAlign:"right" as const, background:"#fffff8" }} />
-                    </div>
+              {/* Previsão mês atual — oculta se a semana já cruza para o mês seguinte */}
+              {!isNextMonthWeek(selectedWeek) && (
+                <div style={{ background:"#fff", border:"2px solid #c8b84a", borderRadius:4, overflow:"hidden", marginBottom:16 }}>
+                  <div style={{ background:"#c8b84a", padding:"10px 20px" }}>
+                    <span style={{ fontWeight:700, fontSize:13, color:"#1a2e1a", letterSpacing:1 }}>
+                      PREVISÃO — {getCurrentMonthName(selectedWeek)}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  {exec?.fields.map((field, i) => (
+                    <div key={field} style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom: i<exec.fields.length-1?"1px solid #f0ede0":"none" }}>
+                      <div style={{ padding:"14px 20px", display:"flex", alignItems:"center", background: i%2===0?"#fafaf5":"#fff" }}>
+                        <span style={{ fontSize:13, color:"#444", fontWeight:600 }}>{FIELD_LABELS[field]}</span>
+                      </div>
+                      <div style={{ padding:"8px 16px", borderLeft:"1px solid #f0ede0", background: i%2===0?"#fafaf5":"#fff" }}>
+                        <input value={values[field]?maskCurrency(values[field]):""}
+                          onChange={e => setValues({...values,[field]:e.target.value.replace(/[^\d]/g,"")})}
+                          placeholder="R$ 0"
+                          style={{ width:"100%", padding:"8px 10px", border:"1.5px solid #e0ddc8", borderRadius:3, fontSize:14, color:"#2a5c1a", fontWeight:700, outline:"none", boxSizing:"border-box" as const, textAlign:"right" as const, background:"#fffff8" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-              {/* Previsão mês seguinte — só nas duas últimas semanas do mês */}
-              {isLastTwoWeeksOfMonth(selectedWeek) && (
-                <div style={{ background:"#fff", border:"2px solid #4a7c3f", borderRadius:4, overflow:"hidden", marginBottom:16 }}>
-                  <div style={{ background:"#4a7c3f", padding:"10px 20px", display:"flex", alignItems:"center", gap:10 }}>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#fff", letterSpacing:1 }}>
+              {/* Previsão mês seguinte — nas duas últimas semanas OU quando a semana cruza para o próximo mês */}
+              {(isLastTwoWeeksOfMonth(selectedWeek) || isNextMonthWeek(selectedWeek)) && (
+                <div style={{ background:"#fff", border:`2px solid ${isNextMonthWeek(selectedWeek)?"#c8b84a":"#4a7c3f"}`, borderRadius:4, overflow:"hidden", marginBottom:16 }}>
+                  <div style={{ background: isNextMonthWeek(selectedWeek)?"#c8b84a":"#4a7c3f", padding:"10px 20px", display:"flex", alignItems:"center", gap:10 }}>
+                    <span style={{ fontWeight:700, fontSize:13, color: isNextMonthWeek(selectedWeek)?"#1a2e1a":"#fff", letterSpacing:1 }}>
                       PREVISÃO — {getNextMonthName(selectedWeek)}
                     </span>
-                    <span style={{ fontSize:10, color:"#a8d4a0" }}>Projeção para o próximo mês</span>
+                    {!isNextMonthWeek(selectedWeek) && <span style={{ fontSize:10, color:"#a8d4a0" }}>Projeção para o próximo mês</span>}
                   </div>
                   {exec?.fields.map((field, i) => (
                     <div key={field} style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom: i<exec.fields.length-1?"1px solid #e8f0e8":"none" }}>
@@ -479,78 +493,83 @@ export default function App() {
 
         {dashTab==="forecast" && (
           <>
-            {/* ── Previsão mês atual ── */}
-            <div style={{ marginBottom:6 }}>
-              <div style={{ fontSize:11, color:"#888", letterSpacing:3, textTransform:"uppercase" as const, marginBottom:10, fontWeight:700 }}>
-                📅 {getCurrentMonthName(dashWeek)}
-              </div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom: isLastTwoWeeksOfMonth(dashWeek)?24:14 }}>
-              {[
-                { title:`PREVISÃO — ${getCurrentMonthName(dashWeek)}`,      cols:["bg","bg_paytv","bg_digital"],                heads:["BG","Pay TV","Digital"],              totalCols:["bg","bg_digital"],                dataKey:"values" },
-                { title:`PREVISÃO HIGH — ${getCurrentMonthName(dashWeek)}`, cols:["bg_high","bg_high_paytv","bg_high_digital"], heads:["BG HIGH","PayTV HIGH","Digital HIGH"], totalCols:["bg_high","bg_high_digital"],       dataKey:"values" },
-              ].map(panel => (
-                <div key={panel.title} style={{ background:"#fff", border:"2px solid #c8b84a", borderRadius:4, overflow:"hidden" }}>
-                  <div style={{ background:"#c8b84a", padding:"9px 16px", textAlign:"center" as const }}>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#1a2e1a", letterSpacing:1 }}>{panel.title}</span>
+            {/* ── Previsão mês atual — oculta se semana cruza para próximo mês ── */}
+            {!isNextMonthWeek(dashWeek) && (
+              <>
+                <div style={{ marginBottom:6 }}>
+                  <div style={{ fontSize:11, color:"#888", letterSpacing:3, textTransform:"uppercase" as const, marginBottom:10, fontWeight:700 }}>
+                    📅 {getCurrentMonthName(dashWeek)}
                   </div>
-                  <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
-                    <thead>
-                      <tr style={{ background:"#faf8e8" }}>
-                        <th style={{ ...thS, textAlign:"left" as const }}></th>
-                        {panel.heads.map(h => <th key={h} style={thS}>{h}</th>)}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {weekData.map((ex,i) => {
-                        const vals = panel.cols.map(c => parse((ex.v as any)[c]));
-                        return (
-                          <tr key={ex.id} style={{ background:i%2===0?"#fafaf5":"#fff" }}>
-                            <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{displayName(ex.name)}</td>
-                            {vals.map((v,j) => <td key={j} style={numS(v)}>{v>0?fmtFull(v):""}</td>)}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr style={{ background:"#4a7c3f" }}>
-                        <td style={{ ...tdS(false), color:"#fff", fontWeight:700 }}>TOTAL</td>
-                        {panel.cols.map(c => <td key={c} style={{ ...tdS(true), color:"#fff", fontWeight:700 }}>{fmtFull(colTotal(c))}</td>)}
-                      </tr>
-                      <tr style={{ background:"#f0ede0" }}>
-                        <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
-                        <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotal(c),0))}</td>
-                      </tr>
-                      <tr style={{ background:"#1a2e1a" }}>
-                        <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
-                        {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={c} /></td>)}
-                      </tr>
-                      <tr style={{ background:"#0f1f0f" }}>
-                        <td colSpan={4} style={{ padding:"8px 10px" }}>
-                          <button onClick={handleSaveEnviado}
-                            style={{ width:"100%", padding:"7px", background:envSaved?"#4a7c3f":"#c8b84a", border:"none", borderRadius:2, color:envSaved?"#fff":"#1a2e1a", fontSize:12, fontWeight:700, cursor:"pointer", ...T }}>
-                            {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
-                          </button>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
                 </div>
-              ))}
-            </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom: isLastTwoWeeksOfMonth(dashWeek)?24:14 }}>
+                  {[
+                    { title:`PREVISÃO — ${getCurrentMonthName(dashWeek)}`,      cols:["bg","bg_paytv","bg_digital"],                heads:["BG","Pay TV","Digital"],              totalCols:["bg","bg_digital"],                dataKey:"values" },
+                    { title:`PREVISÃO HIGH — ${getCurrentMonthName(dashWeek)}`, cols:["bg_high","bg_high_paytv","bg_high_digital"], heads:["BG HIGH","PayTV HIGH","Digital HIGH"], totalCols:["bg_high","bg_high_digital"],       dataKey:"values" },
+                  ].map(panel => (
+                    <div key={panel.title} style={{ background:"#fff", border:"2px solid #c8b84a", borderRadius:4, overflow:"hidden" }}>
+                      <div style={{ background:"#c8b84a", padding:"9px 16px", textAlign:"center" as const }}>
+                        <span style={{ fontWeight:700, fontSize:13, color:"#1a2e1a", letterSpacing:1 }}>{panel.title}</span>
+                      </div>
+                      <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
+                        <thead>
+                          <tr style={{ background:"#faf8e8" }}>
+                            <th style={{ ...thS, textAlign:"left" as const }}></th>
+                            {panel.heads.map(h => <th key={h} style={thS}>{h}</th>)}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {weekData.map((ex,i) => {
+                            const vals = panel.cols.map(c => parse((ex.v as any)[c]));
+                            return (
+                              <tr key={ex.id} style={{ background:i%2===0?"#fafaf5":"#fff" }}>
+                                <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{displayName(ex.name)}</td>
+                                {vals.map((v,j) => <td key={j} style={numS(v)}>{v>0?fmtFull(v):""}</td>)}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ background:"#4a7c3f" }}>
+                            <td style={{ ...tdS(false), color:"#fff", fontWeight:700 }}>TOTAL</td>
+                            {panel.cols.map(c => <td key={c} style={{ ...tdS(true), color:"#fff", fontWeight:700 }}>{fmtFull(colTotal(c))}</td>)}
+                          </tr>
+                          <tr style={{ background:"#f0ede0" }}>
+                            <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
+                            <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotal(c),0))}</td>
+                          </tr>
+                          <tr style={{ background:"#1a2e1a" }}>
+                            <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
+                            {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={c} /></td>)}
+                          </tr>
+                          <tr style={{ background:"#0f1f0f" }}>
+                            <td colSpan={4} style={{ padding:"8px 10px" }}>
+                              <button onClick={handleSaveEnviado}
+                                style={{ width:"100%", padding:"7px", background:envSaved?"#4a7c3f":"#c8b84a", border:"none", borderRadius:2, color:envSaved?"#fff":"#1a2e1a", fontSize:12, fontWeight:700, cursor:"pointer", ...T }}>
+                                {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
+                              </button>
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
-            {/* ── Previsão mês seguinte (só nas duas últimas semanas) ── */}
-            {isLastTwoWeeksOfMonth(dashWeek) && (() => {
+            {/* ── Previsão mês seguinte (últimas 2 semanas OU semana que cruza o mês) ── */}
+            {(isLastTwoWeeksOfMonth(dashWeek) || isNextMonthWeek(dashWeek)) && (() => {
               const nextWeekData = EXECUTIVES.map(ex => ({
                 ...ex,
                 v: allData[`${ex.name}__${dashWeek}`]?.nextValues || {},
               }));
               const colTotalNext = (col: string) => nextWeekData.reduce((s,e) => s + parse((e.v as any)[col]), 0);
+              const isNext = isNextMonthWeek(dashWeek);
               return (
                 <>
                   <div style={{ marginBottom:10 }}>
-                    <div style={{ fontSize:11, color:"#4a7c3f", letterSpacing:3, textTransform:"uppercase" as const, fontWeight:700 }}>
-                      📅 {getNextMonthName(dashWeek)} — Projeção
+                    <div style={{ fontSize:11, color: isNext?"#888":"#4a7c3f", letterSpacing:3, textTransform:"uppercase" as const, fontWeight:700 }}>
+                      📅 {getNextMonthName(dashWeek)}{!isNext && " — Projeção"}
                     </div>
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:14 }}>
@@ -558,13 +577,13 @@ export default function App() {
                       { title:`PREVISÃO — ${getNextMonthName(dashWeek)}`,      cols:["bg","bg_paytv","bg_digital"],                heads:["BG","Pay TV","Digital"],              totalCols:["bg","bg_digital"] },
                       { title:`PREVISÃO HIGH — ${getNextMonthName(dashWeek)}`, cols:["bg_high","bg_high_paytv","bg_high_digital"], heads:["BG HIGH","PayTV HIGH","Digital HIGH"], totalCols:["bg_high","bg_high_digital"] },
                     ].map(panel => (
-                      <div key={panel.title} style={{ background:"#fff", border:"2px solid #4a7c3f", borderRadius:4, overflow:"hidden" }}>
-                        <div style={{ background:"#4a7c3f", padding:"9px 16px", textAlign:"center" as const }}>
-                          <span style={{ fontWeight:700, fontSize:13, color:"#fff", letterSpacing:1 }}>{panel.title}</span>
+                      <div key={panel.title} style={{ background:"#fff", border:`2px solid ${isNext?"#c8b84a":"#4a7c3f"}`, borderRadius:4, overflow:"hidden" }}>
+                        <div style={{ background: isNext?"#c8b84a":"#4a7c3f", padding:"9px 16px", textAlign:"center" as const }}>
+                          <span style={{ fontWeight:700, fontSize:13, color: isNext?"#1a2e1a":"#fff", letterSpacing:1 }}>{panel.title}</span>
                         </div>
                         <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
                           <thead>
-                            <tr style={{ background:"#f5faf5" }}>
+                            <tr style={{ background: isNext?"#faf8e8":"#f5faf5" }}>
                               <th style={{ ...thS, textAlign:"left" as const }}></th>
                               {panel.heads.map(h => <th key={h} style={thS}>{h}</th>)}
                             </tr>
@@ -573,7 +592,7 @@ export default function App() {
                             {nextWeekData.map((ex,i) => {
                               const vals = panel.cols.map(c => parse((ex.v as any)[c]));
                               return (
-                                <tr key={ex.id} style={{ background:i%2===0?"#f5faf5":"#fff" }}>
+                                <tr key={ex.id} style={{ background:i%2===0?(isNext?"#fafaf5":"#f5faf5"):"#fff" }}>
                                   <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{displayName(ex.name)}</td>
                                   {vals.map((v,j) => <td key={j} style={numS(v)}>{v>0?fmtFull(v):""}</td>)}
                                 </tr>
