@@ -202,7 +202,7 @@ export default function App() {
     const key = `${selectedExec}__${selectedWeek}`;
     const upd = { ...allData, [key]: { ...(allData[key]||{ exec: selectedExec, week: selectedWeek, values }), opps, ts: new Date().toISOString() } };
     setAllData(upd); await persistData(upd);
-    setSaved(true); setTimeout(() => { setSaved(false); setScreen("login"); }, 1800);
+    setSaved(true); setTimeout(() => setSaved(false), 3000);
   }
 
   async function handleSaveEnviado() {
