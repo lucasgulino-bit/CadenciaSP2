@@ -165,21 +165,16 @@ export default function App() {
   async function persistData(data: any)    { try { await set(ref(db, "cadence_v2"),  data); } catch(e){} }
   async function persistEnviado(data: any) { try { await set(ref(db, "cadence_env"), data); } catch(e){} }
 
-  async function handleEnter() {
+  function handleEnter() {
     if (!selectedExec) return;
-    try {
-      const { get } = await import("firebase/database");
-      const snap = await get(ref(db, `cadence_v2/${selectedExec}__${selectedWeek}`));
-      const ex = snap.exists() ? snap.val() : allData[`${selectedExec}__${selectedWeek}`];
-      setValues(ex?.values || {});
-      setNextValues(ex?.nextValues || {});
-      setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
-    } catch {
-      const ex = allData[`${selectedExec}__${selectedWeek}`];
-      setValues(ex?.values || {});
-      setNextValues(ex?.nextValues || {});
-      setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
-    }
+    const key = `${selectedExec}__${selectedWeek}`;
+    const ex = allData[key];
+    const isNextMonth = isNextMonthWeek(selectedWeek);
+    // Se semana cruza o mês, dados ficam em values (mês seguinte é o principal)
+    // Nas últimas 2 semanas normais, mês atual em values e projeção em nextValues
+    setValues(isNextMonth ? {} : (ex?.values || {}));
+    setNextValues(isNextMonth ? (ex?.values || {}) : (ex?.nextValues || {}));
+    setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
     setSaved(false); setStep(1); setScreen("input");
   }
 
