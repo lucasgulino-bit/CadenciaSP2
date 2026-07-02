@@ -165,34 +165,58 @@ export default function App() {
   async function persistData(data: any)    { try { await set(ref(db, "cadence_v2"),  data); } catch(e){} }
   async function persistEnviado(data: any) { try { await set(ref(db, "cadence_env"), data); } catch(e){} }
 
-  function handleEnter() {
+  async function handleEnter() {
     if (!selectedExec) return;
-    const ex = allData[`${selectedExec}__${selectedWeek}`];
-    setValues(ex?.values || {});
-    setNextValues(ex?.nextValues || {});
-    setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
+    try {
+      const { get } = await import("firebase/database");
+      const snap = await get(ref(db, `cadence_v2/${selectedExec}__${selectedWeek}`));
+      const ex = snap.exists() ? snap.val() : allData[`${selectedExec}__${selectedWeek}`];
+      setValues(ex?.values || {});
+      setNextValues(ex?.nextValues || {});
+      setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
+    } catch {
+      const ex = allData[`${selectedExec}__${selectedWeek}`];
+      setValues(ex?.values || {});
+      setNextValues(ex?.nextValues || {});
+      setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
+    }
     setSaved(false); setStep(1); setScreen("input");
   }
 
   async function handleSaveStep1() {
     const key = `${selectedExec}__${selectedWeek}`;
     const isNextMonth = isNextMonthWeek(selectedWeek);
-    const upd = { ...allData, [key]: {
+    const record = {
       ...(allData[key]||{}),
       exec: selectedExec,
       week: selectedWeek,
       values: isNextMonth ? nextValues : values,
       ...(!isNextMonth && { nextValues }),
       ts: new Date().toISOString()
-    }};
-    setAllData(upd); await persistData(upd); setStep(2);
+    };
+    const upd = { ...allData, [key]: record };
+    setAllData(upd);
+    await persistData(upd);
+    setStep(2);
   }
 
   async function handleSaveStep2() {
     const key = `${selectedExec}__${selectedWeek}`;
-    const upd = { ...allData, [key]: { ...(allData[key]||{ exec: selectedExec, week: selectedWeek, values }), opps, ts: new Date().toISOString() } };
-    setAllData(upd); await persistData(upd);
-    setSaved(true); setTimeout(() => setSaved(false), 3000);
+    const isNextMonth = isNextMonthWeek(selectedWeek);
+    const record = {
+      ...(allData[key]||{}),
+      exec: selectedExec,
+      week: selectedWeek,
+      values: isNextMonth ? nextValues : values,
+      ...(!isNextMonth && { nextValues }),
+      opps,
+      ts: new Date().toISOString()
+    };
+    const upd = { ...allData, [key]: record };
+    setAllData(upd);
+    await persistData(upd);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   }
 
   async function handleSaveEnviado() {
