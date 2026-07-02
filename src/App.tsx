@@ -178,11 +178,24 @@ export default function App() {
 
   function handleEnter() {
     if (!selectedExec) return;
-    const ex = allData[`${selectedExec}__${selectedWeek}`];
-    setValues(ex?.values || {});
-    setNextValues(ex?.nextValues || {});
-    setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
-    setSaved(false); setStep(1); setScreen("input");
+    // Busca direto do Firebase para garantir dados mais recentes
+    const dbRef = ref(db, `cadence_v2/${selectedExec}__${selectedWeek}`);
+    import("firebase/database").then(({ get }) => {
+      get(dbRef).then(snap => {
+        const ex = snap.exists() ? snap.val() : null;
+        setValues(ex?.values || {});
+        setNextValues(ex?.nextValues || {});
+        setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
+        setSaved(false); setStep(1); setScreen("input");
+      }).catch(() => {
+        // fallback para estado local
+        const ex = allData[`${selectedExec}__${selectedWeek}`];
+        setValues(ex?.values || {});
+        setNextValues(ex?.nextValues || {});
+        setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
+        setSaved(false); setStep(1); setScreen("input");
+      });
+    });
   }
 
   async function handleSaveStep1() {
