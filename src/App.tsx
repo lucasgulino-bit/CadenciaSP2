@@ -226,7 +226,7 @@ export default function App() {
 
   // Merge current executives with historic ones (no duplicates)
   const currentNames  = EXECUTIVES.map(e => e.name);
-  const allExecNames  = [...new Set([...currentNames, ...historicNames])];
+  const allExecNames  = Array.from(new Set([...currentNames, ...historicNames]));
 
   const weekData = allExecNames.map((name, idx) => {
     const currentExec = EXECUTIVES.find(e => e.name === name);
