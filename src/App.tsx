@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, onValue } from "firebase/database";
 
@@ -230,25 +230,23 @@ export default function App() {
     "Lucas Cassone":  ["bg_digital", "bg_high_digital"],
   };
 
-  // Get all exec names that have data for the selected week (from Firebase)
-  const historicNames = Object.keys(allData)
-    .filter(k => k.endsWith(`__${dashWeek}`))
-    .map(k => k.replace(`__${dashWeek}`, ""));
-
-  // Merge current executives with historic ones (no duplicates)
-  const currentNames  = EXECUTIVES.map(e => e.name);
-  const allExecNames  = Array.from(new Set([...currentNames, ...historicNames]));
-
-  const weekData = allExecNames.map((name, idx) => {
-    const currentExec = EXECUTIVES.find(e => e.name === name);
-    return {
-      id:     currentExec?.id ?? 100 + idx,
-      name,
-      fields: currentExec?.fields ?? ALL_KNOWN_FIELDS[name] ?? ["bg"],
-      v:      allData[`${name}__${dashWeek}`]?.values || {},
-      opps:   allData[`${name}__${dashWeek}`]?.opps   || [],
-    };
-  });
+  const weekData = useMemo(() => {
+    const historicNames = Object.keys(allData)
+      .filter(k => k.endsWith(`__${dashWeek}`))
+      .map(k => k.replace(`__${dashWeek}`, ""));
+    const currentNames = EXECUTIVES.map(e => e.name);
+    const allExecNames = Array.from(new Set([...currentNames, ...historicNames]));
+    return allExecNames.map((name, idx) => {
+      const currentExec = EXECUTIVES.find(e => e.name === name);
+      return {
+        id:     currentExec?.id ?? 100 + idx,
+        name,
+        fields: currentExec?.fields ?? ALL_KNOWN_FIELDS[name] ?? ["bg"],
+        v:      allData[`${name}__${dashWeek}`]?.values || {},
+        opps:   allData[`${name}__${dashWeek}`]?.opps   || [],
+      };
+    });
+  }, [allData, dashWeek]);
 
   const colTotal = (col: string) => weekData.reduce((s,e) => s + parse((e.v as any)[col]), 0);
   const getEnv   = (col: string) => parse(envInputs[col]);
@@ -652,7 +650,7 @@ export default function App() {
                   <div key={ex.id} style={{ padding:"9px 14px", background:hasBG?"#f0f8f0":"#fff", border:`1.5px solid ${hasBG?"#4a7c3f":"#ddd"}`, borderRadius:3 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                       <span style={{ fontSize:14 }}>{hasBG?"✅":"⬜"}</span>
-                      <span style={{ fontSize:12, color:hasBG?"#2a5c1a":"#999", fontWeight:hasBG?700:400 }}>{displayName(ex.name)} {ex.name.split(" ")[1]}</span>
+                      <span style={{ fontSize:12, color:hasBG?"#2a5c1a":"#999", fontWeight:hasBG?700:400 }}>{displayName(ex.name)}</span>
                     </div>
                     <div style={{ fontSize:10, color:hasOpp?"#4a7c3f":"#bbb", paddingLeft:22 }}>
                       {hasOpp?`⭐ ${entry.opps.filter((o:any)=>o.client).length} oportunidade(s)`:"Sem oportunidades"}
