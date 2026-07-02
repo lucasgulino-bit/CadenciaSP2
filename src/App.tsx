@@ -186,7 +186,17 @@ export default function App() {
 
   async function handleSaveStep1() {
     const key = `${selectedExec}__${selectedWeek}`;
-    const upd = { ...allData, [key]: { ...(allData[key]||{}), exec: selectedExec, week: selectedWeek, values, nextValues, ts: new Date().toISOString() } };
+    const isNextMonth = isNextMonthWeek(selectedWeek);
+    // Se a semana cruza o mês, salva diretamente em values (mês seguinte é o principal)
+    // Se é projeção das últimas 2 semanas, salva em values (atual) e nextValues (projeção)
+    const upd = { ...allData, [key]: {
+      ...(allData[key]||{}),
+      exec: selectedExec,
+      week: selectedWeek,
+      values: isNextMonth ? nextValues : values,
+      ...((!isNextMonth) && { nextValues }),
+      ts: new Date().toISOString()
+    }};
     setAllData(upd); await persistData(upd); setStep(2);
   }
 
@@ -559,12 +569,16 @@ export default function App() {
 
             {/* ── Previsão mês seguinte (últimas 2 semanas OU semana que cruza o mês) ── */}
             {(isLastTwoWeeksOfMonth(dashWeek) || isNextMonthWeek(dashWeek)) && (() => {
-              const nextWeekData = EXECUTIVES.map(ex => ({
+              const isNext = isNextMonthWeek(dashWeek);
+              const nextWeekData = weekData.map(ex => ({
                 ...ex,
-                v: allData[`${ex.name}__${dashWeek}`]?.nextValues || {},
+                // Se a semana cruza o mês (ex: 29/06), os dados são values normais
+                // Se é projeção das últimas 2 semanas, os dados são nextValues
+                v: isNext
+                  ? (allData[`${ex.name}__${dashWeek}`]?.values || {})
+                  : (allData[`${ex.name}__${dashWeek}`]?.nextValues || {}),
               }));
               const colTotalNext = (col: string) => nextWeekData.reduce((s,e) => s + parse((e.v as any)[col]), 0);
-              const isNext = isNextMonthWeek(dashWeek);
               return (
                 <>
                   <div style={{ marginBottom:10 }}>
