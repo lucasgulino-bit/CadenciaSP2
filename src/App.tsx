@@ -30,7 +30,7 @@ const firebaseConfig = {
   storageBucket: "cadencia-sp.firebasestorage.app",
   messagingSenderId: "226124975510",
   appId: "1:226124975510:web:d8f261d58d61777dd361b7",
-};;
+};
 // ─────────────────────────────────────────────────────────────────────────────
 
 const app = initializeApp(firebaseConfig);
@@ -38,11 +38,11 @@ const db  = getDatabase(app);
 
 const EXECUTIVES = [
   { id: 1, name: "Bruno Duque",    fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 2, name: "Julia Masone",   fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 3, name: "Lucas Gulino",   fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 4, name: "Raphael Jucá",   fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 5, name: "Ricardo Caldas", fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 6, name: "Manuella Vidal", fields: ["bg_digital", "bg_high_digital"] },
+  { id: 2, name: "Lucas Gulino",   fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
+  { id: 3, name: "Raphael Jucá",   fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
+  { id: 4, name: "Ricardo Caldas", fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
+  { id: 5, name: "Manuella Vidal", fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
+  { id: 6, name: "Lucas Cassone",  fields: ["bg_digital", "bg_high_digital"] },
 ];
 
 const FIELD_LABELS: Record<string, string> = {
@@ -58,6 +58,7 @@ const PLATFORM_COLOR: Record<string, any> = {
 };
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const displayName = (name: string) => name === "Lucas Cassone" ? "Cassone" : name.split(" ")[0];
 const emptyOpp = () => ({ id: Date.now() + Math.random(), platform: "TV Aberta", client: "", detail: "", value: "", month: MONTHS[new Date().getMonth()] });
 const parse    = (v: any) => parseFloat(String(v || "").replace(/[^\d]/g, "")) || 0;
 const fmtFull  = (n: number) => n === 0 ? "—" : "R$ " + n.toLocaleString("pt-BR");
@@ -479,7 +480,7 @@ export default function App() {
                         const vals = panel.cols.map(c => parse((ex.v as any)[c]));
                         return (
                           <tr key={ex.id} style={{ background:i%2===0?"#fafaf5":"#fff" }}>
-                            <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{ex.name.split(" ")[0]}</td>
+                            <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{displayName(ex.name)}</td>
                             {vals.map((v,j) => <td key={j} style={numS(v)}>{v>0?fmtFull(v):""}</td>)}
                           </tr>
                         );
@@ -547,7 +548,7 @@ export default function App() {
                               const vals = panel.cols.map(c => parse((ex.v as any)[c]));
                               return (
                                 <tr key={ex.id} style={{ background:i%2===0?"#f5faf5":"#fff" }}>
-                                  <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{ex.name.split(" ")[0]}</td>
+                                  <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{displayName(ex.name)}</td>
                                   {vals.map((v,j) => <td key={j} style={numS(v)}>{v>0?fmtFull(v):""}</td>)}
                                 </tr>
                               );
@@ -591,7 +592,7 @@ export default function App() {
                   <div key={ex.id} style={{ padding:"9px 14px", background:hasBG?"#f0f8f0":"#fff", border:`1.5px solid ${hasBG?"#4a7c3f":"#ddd"}`, borderRadius:3 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                       <span style={{ fontSize:14 }}>{hasBG?"✅":"⬜"}</span>
-                      <span style={{ fontSize:12, color:hasBG?"#2a5c1a":"#999", fontWeight:hasBG?700:400 }}>{ex.name.split(" ")[0]} {ex.name.split(" ")[1]}</span>
+                      <span style={{ fontSize:12, color:hasBG?"#2a5c1a":"#999", fontWeight:hasBG?700:400 }}>{displayName(ex.name)} {ex.name.split(" ")[1]}</span>
                     </div>
                     <div style={{ fontSize:10, color:hasOpp?"#4a7c3f":"#bbb", paddingLeft:22 }}>
                       {hasOpp?`⭐ ${entry.opps.filter((o:any)=>o.client).length} oportunidade(s)`:"Sem oportunidades"}
