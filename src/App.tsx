@@ -115,17 +115,18 @@ function isLastTwoWeeksOfMonth(weekKey: string): boolean {
   return lastTwo.includes(keyDate);
 }
 
-// Returns true if the week (Mon–Fri) contains the 1st of the next month
-// In this case we show ONLY the next month block, hiding the current month
+// Returns true if the week starts in the last day(s) of a month and Friday falls in the next month
+// Example: week starting Mon 29/06 ends Fri 03/07 → true (show only July)
+// Example: week starting Mon 01/06 ends Fri 05/06 → false (still June week)
 function isNextMonthWeek(weekKey: string): boolean {
   const parts = weekKey.replace("w_", "").split("-");
   const year  = parseInt(parts[0]);
   const month = parseInt(parts[1]) - 1;
   const day   = parseInt(parts[2]);
-  // Friday of this week = Monday + 4
+  const mon = new Date(year, month, day);
   const fri = new Date(year, month, day + 4);
-  // If Friday is in a different month than Monday, the week crosses into next month
-  return fri.getMonth() !== month;
+  // Only true if Monday itself is at the end of its month AND Friday is in the next month
+  return fri.getMonth() !== mon.getMonth() && mon.getMonth() === month;
 }
 
 function getNextMonthName(weekKey: string): string {
@@ -572,8 +573,8 @@ export default function App() {
               const isNext = isNextMonthWeek(dashWeek);
               const nextWeekData = weekData.map(ex => ({
                 ...ex,
-                // Se a semana cruza o mês (ex: 29/06), os dados são values normais
-                // Se é projeção das últimas 2 semanas, os dados são nextValues
+                // Semana que cruza o mês (ex: 29/06→03/07): dados normais em values
+                // Projeção das últimas 2 semanas: dados em nextValues
                 v: isNext
                   ? (allData[`${ex.name}__${dashWeek}`]?.values || {})
                   : (allData[`${ex.name}__${dashWeek}`]?.nextValues || {}),
