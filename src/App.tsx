@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, onValue } from "firebase/database";
 
-// Inject print styles once
 const PRINT_STYLE = `
 @media print {
   body * { visibility: hidden !important; }
@@ -21,7 +20,6 @@ if (!document.getElementById("cadencia-print-style")) {
   document.head.appendChild(s);
 }
 
-// ─── COLE AQUI AS CONFIGURAÇÕES DO SEU FIREBASE ───────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyCNg2lVSkF1aL4pa7MvUXvrEiIgUpmCaIQ",
   authDomain: "cadencia-sp.firebaseapp.com",
@@ -31,7 +29,6 @@ const firebaseConfig = {
   messagingSenderId: "226124975510",
   appId: "1:226124975510:web:d8f261d58d61777dd361b7"
 };
-// ─────────────────────────────────────────────────────────────────────────────
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
@@ -44,6 +41,17 @@ const EXECUTIVES = [
   { id: 5, name: "Manuella Vidal", fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
   { id: 6, name: "Lucas Cassone",  fields: ["bg_digital", "bg_high_digital"] },
 ];
+
+// Histórico de executivos antigos — fora do componente para evitar re-renders
+const ALL_KNOWN_FIELDS: Record<string, string[]> = {
+  "Bruno Duque":    ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+  "Julia Masone":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+  "Lucas Gulino":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+  "Raphael Jucá":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+  "Ricardo Caldas": ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+  "Manuella Vidal": ["bg", "bg_paytv", "bg_high", "bg_high_paytv", "bg_digital", "bg_high_digital"],
+  "Lucas Cassone":  ["bg_digital", "bg_high_digital"],
+};
 
 const FIELD_LABELS: Record<string, string> = {
   bg: "BG", bg_paytv: "BG Pay TV", bg_high: "BG High",
@@ -71,9 +79,8 @@ function maskCurrency(raw: any) {
 function getWeeks() {
   const weeks: any[] = [];
   const now = new Date();
-  // Get Monday of CURRENT week (not next week)
-  const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const diffToMon = day === 0 ? -6 : 1 - day; // Sunday goes back 6, others go back to Monday
+  const day = now.getDay();
+  const diffToMon = day === 0 ? -6 : 1 - day;
   const mon = new Date(now);
   mon.setDate(now.getDate() + diffToMon);
   mon.setHours(0,0,0,0);
@@ -89,15 +96,11 @@ function getWeeks() {
 const WEEKS = getWeeks();
 const CURRENT_WEEK = WEEKS[4].key;
 
-// Returns true if the given week key is one of the last 2 Mondays of its month
 function isLastTwoWeeksOfMonth(weekKey: string): boolean {
-  // Use local date parsing to avoid timezone issues
   const parts = weekKey.replace("w_", "").split("-");
   const year  = parseInt(parts[0]);
   const month = parseInt(parts[1]) - 1;
   const day   = parseInt(parts[2]);
-
-  // Find all Mondays in this month
   const mondays: Date[] = [];
   const cur = new Date(year, month, 1);
   const dayOfWeek = cur.getDay();
@@ -115,9 +118,6 @@ function isLastTwoWeeksOfMonth(weekKey: string): boolean {
   return lastTwo.includes(keyDate);
 }
 
-// Returns true if the week starts in the last day(s) of a month and Friday falls in the next month
-// Example: week starting Mon 29/06 ends Fri 03/07 → true (show only July)
-// Example: week starting Mon 01/06 ends Fri 05/06 → false (still June week)
 function isNextMonthWeek(weekKey: string): boolean {
   const parts = weekKey.replace("w_", "").split("-");
   const year  = parseInt(parts[0]);
@@ -125,7 +125,6 @@ function isNextMonthWeek(weekKey: string): boolean {
   const day   = parseInt(parts[2]);
   const mon = new Date(year, month, day);
   const fri = new Date(year, month, day + 4);
-  // Only true if Monday itself is at the end of its month AND Friday is in the next month
   return fri.getMonth() !== mon.getMonth() && mon.getMonth() === month;
 }
 
@@ -147,28 +146,28 @@ const tdS = (r: boolean): any => ({ padding:"8px 12px", fontSize:13, textAlign: 
 const numS = (v: number): any => ({ ...tdS(true), color: v>0?"#1a5c1a":"#bbb", fontWeight: v>0?700:400 });
 
 export default function App() {
-  const [screen, setScreen]         = useState("login");
+  const [screen, setScreen]             = useState("login");
   const [selectedExec, setSelectedExec] = useState("");
   const [selectedWeek, setSelectedWeek] = useState(CURRENT_WEEK);
-  const [allData, setAllData]       = useState<any>({});
-  const [values, setValues]         = useState<any>({});
-  const [nextValues, setNextValues] = useState<any>({});
-  const [opps, setOpps]             = useState<any[]>([emptyOpp()]);
-  const [step, setStep]             = useState(1);
-  const [saved, setSaved]           = useState(false);
-  const [dashWeek, setDashWeek]     = useState(CURRENT_WEEK);
-  const [enviado, setEnviado]       = useState<any>({});
-  const [envInputs, setEnvInputs]   = useState<any>({});
-  const [envSaved, setEnvSaved]     = useState(false);
-  const [dashTab, setDashTab]       = useState("forecast");
-  const [filterExec, setFilterExec] = useState("Todos");
-  const [filterPlat, setFilterPlat] = useState("Todas");
+  const [allData, setAllData]           = useState<any>({});
+  const [values, setValues]             = useState<any>({});
+  const [nextValues, setNextValues]     = useState<any>({});
+  const [opps, setOpps]                 = useState<any[]>([emptyOpp()]);
+  const [step, setStep]                 = useState(1);
+  const [saved, setSaved]               = useState(false);
+  const [dashWeek, setDashWeek]         = useState(CURRENT_WEEK);
+  const [enviado, setEnviado]           = useState<any>({});
+  const [envInputs, setEnvInputs]       = useState<any>({});
+  const [envSaved, setEnvSaved]         = useState(false);
+  const [dashTab, setDashTab]           = useState("forecast");
+  const [filterExec, setFilterExec]     = useState("Todos");
+  const [filterPlat, setFilterPlat]     = useState("Todas");
   const [filterClient, setFilterClient] = useState("Todos");
-  const [filterMonth, setFilterMonth] = useState("Todos");
+  const [filterMonth, setFilterMonth]   = useState("Todos");
 
   useEffect(() => {
-    onValue(ref(db, "cadence_v2"),   snap => { if (snap.exists()) setAllData(snap.val()); });
-    onValue(ref(db, "cadence_env"),  snap => { if (snap.exists()) setEnviado(snap.val()); });
+    onValue(ref(db, "cadence_v2"),  snap => { if (snap.exists()) setAllData(snap.val()); });
+    onValue(ref(db, "cadence_env"), snap => { if (snap.exists()) setEnviado(snap.val()); });
   }, []);
 
   useEffect(() => { setEnvInputs(enviado[dashWeek] || {}); }, [dashWeek, enviado]);
@@ -188,14 +187,12 @@ export default function App() {
   async function handleSaveStep1() {
     const key = `${selectedExec}__${selectedWeek}`;
     const isNextMonth = isNextMonthWeek(selectedWeek);
-    // Se a semana cruza o mês, salva diretamente em values (mês seguinte é o principal)
-    // Se é projeção das últimas 2 semanas, salva em values (atual) e nextValues (projeção)
     const upd = { ...allData, [key]: {
       ...(allData[key]||{}),
       exec: selectedExec,
       week: selectedWeek,
       values: isNextMonth ? nextValues : values,
-      ...((!isNextMonth) && { nextValues }),
+      ...(!isNextMonth && { nextValues }),
       ts: new Date().toISOString()
     }};
     setAllData(upd); await persistData(upd); setStep(2);
@@ -218,43 +215,32 @@ export default function App() {
   function removeOpp(id: any) { setOpps(opps.filter((o:any) => o.id !== id)); }
   function addOpp() { setOpps([...opps, emptyOpp()]); }
 
-  // Executivos ativos na semana selecionada:
-  // Combina lista atual + qualquer exec com dados no Firebase para essa semana (histórico)
-  const ALL_KNOWN_FIELDS: Record<string, string[]> = {
-    "Bruno Duque":    ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
-    "Julia Masone":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv", "bg_digital", "bg_high_digital"],
-    "Lucas Gulino":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
-    "Raphael Jucá":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
-    "Ricardo Caldas": ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
-    "Manuella Vidal": ["bg", "bg_paytv", "bg_high", "bg_high_paytv", "bg_digital", "bg_high_digital"],
-    "Lucas Cassone":  ["bg_digital", "bg_high_digital"],
-  };
-
+  // weekData: lista atual + executivos históricos do Firebase para a semana selecionada
   const weekData = useMemo(() => {
+    const suffix = `__${dashWeek}`;
     const historicNames = Object.keys(allData)
-      .filter(k => k.endsWith(`__${dashWeek}`))
-      .map(k => k.replace(`__${dashWeek}`, ""));
+      .filter(k => k.endsWith(suffix))
+      .map(k => k.slice(0, k.length - suffix.length));
     const currentNames = EXECUTIVES.map(e => e.name);
-    const allExecNames = Array.from(new Set([...currentNames, ...historicNames]));
-    return allExecNames.map((name, idx) => {
-      const currentExec = EXECUTIVES.find(e => e.name === name);
+    const allNames = Array.from(new Set(currentNames.concat(historicNames)));
+    return allNames.map((name, idx) => {
+      const cur = EXECUTIVES.find(e => e.name === name);
       return {
-        id:     currentExec?.id ?? 100 + idx,
+        id:     cur ? cur.id : 100 + idx,
         name,
-        fields: currentExec?.fields ?? ALL_KNOWN_FIELDS[name] ?? ["bg"],
-        v:      allData[`${name}__${dashWeek}`]?.values || {},
-        opps:   allData[`${name}__${dashWeek}`]?.opps   || [],
+        fields: cur ? cur.fields : (ALL_KNOWN_FIELDS[name] || ["bg"]),
+        v:      (allData[`${name}__${dashWeek}`] || {}).values || {},
+        opps:   (allData[`${name}__${dashWeek}`] || {}).opps   || [],
       };
     });
   }, [allData, dashWeek]);
 
   const colTotal = (col: string) => weekData.reduce((s,e) => s + parse((e.v as any)[col]), 0);
   const getEnv   = (col: string) => parse(envInputs[col]);
-  const allOpps: any[]  = weekData.reduce((acc: any[], e) => acc.concat((e.opps as any[]).filter((o:any) => o.client).map((o:any) => ({...o, exec: e.name}))), []);
-  const totalBG     = colTotal("bg") + colTotal("bg_digital");
-  const totalBGHigh = colTotal("bg_high") + colTotal("bg_high_digital");
+  const allOpps: any[] = weekData.reduce((acc: any[], e) =>
+    acc.concat((e.opps as any[]).filter((o:any) => o.client).map((o:any) => ({...o, exec: e.name}))), []);
   const exec = EXECUTIVES.find(e => e.name === selectedExec);
-  const wk   = WEEKS.find(w => w.key === dashWeek) || WEEKS[2];
+  const wk   = WEEKS.find(w => w.key === dashWeek) || WEEKS[4];
 
   const EnvCell = ({ col }: { col: string }) => {
     const [localVal, setLocalVal] = useState(envInputs[col] || "");
@@ -265,11 +251,12 @@ export default function App() {
         onBlur={() => setEnvInputs((prev: any) => ({...prev, [col]: localVal}))}
         placeholder="—"
         style={{ width:"100%", padding:"5px 8px", background:"#2a3e2a", border:"1px solid #c8b84a",
-          borderRadius:2, color:"#c8b84a", fontSize:13, fontWeight:700, textAlign:"right" as const, outline:"none", boxSizing:"border-box" as const }} />
+          borderRadius:2, color:"#c8b84a", fontSize:13, fontWeight:700, textAlign:"right" as const,
+          outline:"none", boxSizing:"border-box" as const }} />
     );
   };
 
-  // LOGIN
+  // ── LOGIN ────────────────────────────────────────────────────────────────
   if (screen === "login") return (
     <div style={{ minHeight:"100vh", background:"#f7f6f0", display:"flex", alignItems:"center", justifyContent:"center", ...T }}>
       <div style={{ width:400, padding:"44px 40px", background:"#fff", border:"2px solid #c8b84a", borderRadius:4, boxShadow:"6px 6px 0 #c8b84a33" }}>
@@ -302,7 +289,7 @@ export default function App() {
     </div>
   );
 
-  // INPUT
+  // ── INPUT ────────────────────────────────────────────────────────────────
   if (screen === "input") {
     const wkLabel = WEEKS.find(w => w.key === selectedWeek);
     const StepBar = () => (
@@ -312,8 +299,10 @@ export default function App() {
             <div style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 16px", borderRadius:3,
               background: step===s.n?"#4a7c3f":step>s.n?"#d4ecd4":"#f0ede0",
               border:`1.5px solid ${step===s.n?"#4a7c3f":step>s.n?"#4a7c3f":"#ddd"}` }}>
-              <span style={{ width:20, height:20, borderRadius:"50%", background: step===s.n?"#fff":step>s.n?"#4a7c3f":"#bbb",
-                color: step===s.n?"#4a7c3f":"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ width:20, height:20, borderRadius:"50%",
+                background: step===s.n?"#fff":step>s.n?"#4a7c3f":"#bbb",
+                color: step===s.n?"#4a7c3f":"#fff", fontSize:11, fontWeight:700,
+                display:"flex", alignItems:"center", justifyContent:"center" }}>
                 {step>s.n?"✓":s.n}
               </span>
               <span style={{ fontSize:12, fontWeight:700, color: step===s.n?"#fff":step>s.n?"#2a5c1a":"#999" }}>{s.label}</span>
@@ -342,13 +331,10 @@ export default function App() {
           <StepBar />
           {step===1 && (
             <>
-              {/* Previsão mês atual — oculta se a semana já cruza para o mês seguinte */}
               {!isNextMonthWeek(selectedWeek) && (
                 <div style={{ background:"#fff", border:"2px solid #c8b84a", borderRadius:4, overflow:"hidden", marginBottom:16 }}>
                   <div style={{ background:"#c8b84a", padding:"10px 20px" }}>
-                    <span style={{ fontWeight:700, fontSize:13, color:"#1a2e1a", letterSpacing:1 }}>
-                      PREVISÃO — {getCurrentMonthName(selectedWeek)}
-                    </span>
+                    <span style={{ fontWeight:700, fontSize:13, color:"#1a2e1a", letterSpacing:1 }}>PREVISÃO — {getCurrentMonthName(selectedWeek)}</span>
                   </div>
                   {exec?.fields.map((field, i) => (
                     <div key={field} style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom: i<exec.fields.length-1?"1px solid #f0ede0":"none" }}>
@@ -365,8 +351,6 @@ export default function App() {
                   ))}
                 </div>
               )}
-
-              {/* Previsão mês seguinte — nas duas últimas semanas OU quando a semana cruza para o próximo mês */}
               {(isLastTwoWeeksOfMonth(selectedWeek) || isNextMonthWeek(selectedWeek)) && (
                 <div style={{ background:"#fff", border:`2px solid ${isNextMonthWeek(selectedWeek)?"#c8b84a":"#4a7c3f"}`, borderRadius:4, overflow:"hidden", marginBottom:16 }}>
                   <div style={{ background: isNextMonthWeek(selectedWeek)?"#c8b84a":"#4a7c3f", padding:"10px 20px", display:"flex", alignItems:"center", gap:10 }}>
@@ -390,7 +374,6 @@ export default function App() {
                   ))}
                 </div>
               )}
-
               <button onClick={handleSaveStep1}
                 style={{ width:"100%", padding:"14px", background:"#1a2e1a", border:"none", borderRadius:3, color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", ...T, letterSpacing:1 }}>
                 PRÓXIMO: Principais Oportunidades →
@@ -465,11 +448,81 @@ export default function App() {
     );
   }
 
-  // DASHBOARD
+  // ── DASHBOARD ────────────────────────────────────────────────────────────
   function exportPDF() {
     setDashTab("forecast");
     setTimeout(() => window.print(), 300);
   }
+
+  const isNext = isNextMonthWeek(dashWeek);
+  const isLast2 = isLastTwoWeeksOfMonth(dashWeek);
+
+  const DashPanel = ({ title, cols, heads, totalCols, border, headerBg, headerColor, rowBg, envPrefix }:
+    { title:string, cols:string[], heads:string[], totalCols:string[], border:string, headerBg:string, headerColor:string, rowBg:string, envPrefix:string }) => (
+    <div style={{ background:"#fff", border:`2px solid ${border}`, borderRadius:4, overflow:"hidden" }}>
+      <div style={{ background:headerBg, padding:"9px 16px", textAlign:"center" as const }}>
+        <span style={{ fontWeight:700, fontSize:13, color:headerColor, letterSpacing:1 }}>{title}</span>
+      </div>
+      <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
+        <thead>
+          <tr style={{ background:rowBg }}>
+            <th style={{ ...thS, textAlign:"left" as const }}></th>
+            {heads.map(h => <th key={h} style={thS}>{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {weekData.map((ex,i) => {
+            const src = envPrefix === ""
+              ? ex.v
+              : ((allData[`${ex.name}__${dashWeek}`] || {}).nextValues || {});
+            const vals = cols.map(c => parse((src as any)[c]));
+            return (
+              <tr key={ex.id} style={{ background:i%2===0?rowBg:"#fff" }}>
+                <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{displayName(ex.name)}</td>
+                {vals.map((v,j) => <td key={j} style={numS(v)}>{v>0?fmtFull(v):""}</td>)}
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr style={{ background:"#4a7c3f" }}>
+            <td style={{ ...tdS(false), color:"#fff", fontWeight:700 }}>TOTAL</td>
+            {cols.map(c => {
+              const tot = weekData.reduce((s,e) => {
+                const src2 = envPrefix === "" ? e.v : ((allData[`${e.name}__${dashWeek}`]||{}).nextValues||{});
+                return s + parse((src2 as any)[c]);
+              }, 0);
+              return <td key={c} style={{ ...tdS(true), color:"#fff", fontWeight:700 }}>{fmtFull(tot)}</td>;
+            })}
+          </tr>
+          <tr style={{ background:"#f0ede0" }}>
+            <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
+            <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>
+              {fmtFull(totalCols.reduce((s,c) => {
+                const tot = weekData.reduce((s2,e) => {
+                  const src2 = envPrefix === "" ? e.v : ((allData[`${e.name}__${dashWeek}`]||{}).nextValues||{});
+                  return s2 + parse((src2 as any)[c]);
+                }, 0);
+                return s + tot;
+              }, 0))}
+            </td>
+          </tr>
+          <tr style={{ background:"#1a2e1a" }}>
+            <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
+            {cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={envPrefix ? `${envPrefix}${c}` : c} /></td>)}
+          </tr>
+          <tr style={{ background:"#0f1f0f" }}>
+            <td colSpan={4} style={{ padding:"8px 10px" }}>
+              <button onClick={handleSaveEnviado}
+                style={{ width:"100%", padding:"7px", background:envSaved?"#4a7c3f":"#c8b84a", border:"none", borderRadius:2, color:envSaved?"#fff":"#1a2e1a", fontSize:12, fontWeight:700, cursor:"pointer", ...T }}>
+                {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
+              </button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
 
   return (
     <div style={{ minHeight:"100vh", background:"#f7f6f0", ...T, padding:"28px 20px" }}>
@@ -502,150 +555,47 @@ export default function App() {
 
         {dashTab==="forecast" && (
           <>
-            {/* ── Previsão mês atual — oculta se semana cruza para próximo mês ── */}
-            {!isNextMonthWeek(dashWeek) && (
+            {/* Bloco mês atual — oculto se semana cruza para próximo mês */}
+            {!isNext && (
               <>
-                <div style={{ marginBottom:6 }}>
-                  <div style={{ fontSize:11, color:"#888", letterSpacing:3, textTransform:"uppercase" as const, marginBottom:10, fontWeight:700 }}>
-                    📅 {getCurrentMonthName(dashWeek)}
-                  </div>
+                <div style={{ fontSize:11, color:"#888", letterSpacing:3, textTransform:"uppercase" as const, marginBottom:10, fontWeight:700 }}>
+                  📅 {getCurrentMonthName(dashWeek)}
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom: isLastTwoWeeksOfMonth(dashWeek)?24:14 }}>
-                  {[
-                    { title:`PREVISÃO — ${getCurrentMonthName(dashWeek)}`,      cols:["bg","bg_paytv","bg_digital"],                heads:["BG","Pay TV","Digital"],              totalCols:["bg","bg_digital"],                dataKey:"values" },
-                    { title:`PREVISÃO HIGH — ${getCurrentMonthName(dashWeek)}`, cols:["bg_high","bg_high_paytv","bg_high_digital"], heads:["BG HIGH","PayTV HIGH","Digital HIGH"], totalCols:["bg_high","bg_high_digital"],       dataKey:"values" },
-                  ].map(panel => (
-                    <div key={panel.title} style={{ background:"#fff", border:"2px solid #c8b84a", borderRadius:4, overflow:"hidden" }}>
-                      <div style={{ background:"#c8b84a", padding:"9px 16px", textAlign:"center" as const }}>
-                        <span style={{ fontWeight:700, fontSize:13, color:"#1a2e1a", letterSpacing:1 }}>{panel.title}</span>
-                      </div>
-                      <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
-                        <thead>
-                          <tr style={{ background:"#faf8e8" }}>
-                            <th style={{ ...thS, textAlign:"left" as const }}></th>
-                            {panel.heads.map(h => <th key={h} style={thS}>{h}</th>)}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {weekData.map((ex,i) => {
-                            const vals = panel.cols.map(c => parse((ex.v as any)[c]));
-                            return (
-                              <tr key={ex.id} style={{ background:i%2===0?"#fafaf5":"#fff" }}>
-                                <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{displayName(ex.name)}</td>
-                                {vals.map((v,j) => <td key={j} style={numS(v)}>{v>0?fmtFull(v):""}</td>)}
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                        <tfoot>
-                          <tr style={{ background:"#4a7c3f" }}>
-                            <td style={{ ...tdS(false), color:"#fff", fontWeight:700 }}>TOTAL</td>
-                            {panel.cols.map(c => <td key={c} style={{ ...tdS(true), color:"#fff", fontWeight:700 }}>{fmtFull(colTotal(c))}</td>)}
-                          </tr>
-                          <tr style={{ background:"#f0ede0" }}>
-                            <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
-                            <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotal(c),0))}</td>
-                          </tr>
-                          <tr style={{ background:"#1a2e1a" }}>
-                            <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
-                            {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={c} /></td>)}
-                          </tr>
-                          <tr style={{ background:"#0f1f0f" }}>
-                            <td colSpan={4} style={{ padding:"8px 10px" }}>
-                              <button onClick={handleSaveEnviado}
-                                style={{ width:"100%", padding:"7px", background:envSaved?"#4a7c3f":"#c8b84a", border:"none", borderRadius:2, color:envSaved?"#fff":"#1a2e1a", fontSize:12, fontWeight:700, cursor:"pointer", ...T }}>
-                                {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
-                              </button>
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  ))}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom: isLast2?24:14 }}>
+                  <DashPanel title={`PREVISÃO — ${getCurrentMonthName(dashWeek)}`}
+                    cols={["bg","bg_paytv","bg_digital"]} heads={["BG","Pay TV","Digital"]} totalCols={["bg","bg_digital"]}
+                    border="#c8b84a" headerBg="#c8b84a" headerColor="#1a2e1a" rowBg="#faf8e8" envPrefix="" />
+                  <DashPanel title={`PREVISÃO HIGH — ${getCurrentMonthName(dashWeek)}`}
+                    cols={["bg_high","bg_high_paytv","bg_high_digital"]} heads={["BG HIGH","PayTV HIGH","Digital HIGH"]} totalCols={["bg_high","bg_high_digital"]}
+                    border="#c8b84a" headerBg="#c8b84a" headerColor="#1a2e1a" rowBg="#faf8e8" envPrefix="" />
                 </div>
               </>
             )}
 
-            {/* ── Previsão mês seguinte (últimas 2 semanas OU semana que cruza o mês) ── */}
-            {(isLastTwoWeeksOfMonth(dashWeek) || isNextMonthWeek(dashWeek)) && (() => {
-              const isNext = isNextMonthWeek(dashWeek);
-              const nextWeekData = weekData.map(ex => ({
-                ...ex,
-                // Semana que cruza o mês (ex: 29/06→03/07): dados normais em values
-                // Projeção das últimas 2 semanas: dados em nextValues
-                v: isNext
-                  ? (allData[`${ex.name}__${dashWeek}`]?.values || {})
-                  : (allData[`${ex.name}__${dashWeek}`]?.nextValues || {}),
-              }));
-              const colTotalNext = (col: string) => nextWeekData.reduce((s,e) => s + parse((e.v as any)[col]), 0);
-              return (
-                <>
-                  <div style={{ marginBottom:10 }}>
-                    <div style={{ fontSize:11, color: isNext?"#888":"#4a7c3f", letterSpacing:3, textTransform:"uppercase" as const, fontWeight:700 }}>
-                      📅 {getNextMonthName(dashWeek)}{!isNext && " — Projeção"}
-                    </div>
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:14 }}>
-                    {[
-                      { title:`PREVISÃO — ${getNextMonthName(dashWeek)}`,      cols:["bg","bg_paytv","bg_digital"],                heads:["BG","Pay TV","Digital"],              totalCols:["bg","bg_digital"] },
-                      { title:`PREVISÃO HIGH — ${getNextMonthName(dashWeek)}`, cols:["bg_high","bg_high_paytv","bg_high_digital"], heads:["BG HIGH","PayTV HIGH","Digital HIGH"], totalCols:["bg_high","bg_high_digital"] },
-                    ].map(panel => (
-                      <div key={panel.title} style={{ background:"#fff", border:`2px solid ${isNext?"#c8b84a":"#4a7c3f"}`, borderRadius:4, overflow:"hidden" }}>
-                        <div style={{ background: isNext?"#c8b84a":"#4a7c3f", padding:"9px 16px", textAlign:"center" as const }}>
-                          <span style={{ fontWeight:700, fontSize:13, color: isNext?"#1a2e1a":"#fff", letterSpacing:1 }}>{panel.title}</span>
-                        </div>
-                        <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
-                          <thead>
-                            <tr style={{ background: isNext?"#faf8e8":"#f5faf5" }}>
-                              <th style={{ ...thS, textAlign:"left" as const }}></th>
-                              {panel.heads.map(h => <th key={h} style={thS}>{h}</th>)}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {nextWeekData.map((ex,i) => {
-                              const vals = panel.cols.map(c => parse((ex.v as any)[c]));
-                              return (
-                                <tr key={ex.id} style={{ background:i%2===0?(isNext?"#fafaf5":"#f5faf5"):"#fff" }}>
-                                  <td style={{ ...tdS(false), fontWeight:600, color:"#333" }}>{displayName(ex.name)}</td>
-                                  {vals.map((v,j) => <td key={j} style={numS(v)}>{v>0?fmtFull(v):""}</td>)}
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                          <tfoot>
-                            <tr style={{ background:"#4a7c3f" }}>
-                              <td style={{ ...tdS(false), color:"#fff", fontWeight:700 }}>TOTAL</td>
-                              {panel.cols.map(c => <td key={c} style={{ ...tdS(true), color:"#fff", fontWeight:700 }}>{fmtFull(colTotalNext(c))}</td>)}
-                            </tr>
-                            <tr style={{ background:"#f0ede0" }}>
-                              <td style={{ ...tdS(false), fontWeight:700, color:"#1a2e1a" }}>TOTAL BG</td>
-                              <td colSpan={3} style={{ ...tdS(true), fontWeight:700, color:"#1a2e1a", fontSize:14 }}>{fmtFull(panel.totalCols.reduce((s,c)=>s+colTotalNext(c),0))}</td>
-                            </tr>
-                            <tr style={{ background:"#1a2e1a" }}>
-                              <td style={{ ...tdS(false), color:"#c8b84a", fontWeight:700 }}>ENVIADO</td>
-                              {panel.cols.map(c => <td key={c} style={{ padding:"5px 8px" }}><EnvCell col={`next_${c}`} /></td>)}
-                            </tr>
-                            <tr style={{ background:"#0f1f0f" }}>
-                              <td colSpan={4} style={{ padding:"8px 10px" }}>
-                                <button onClick={handleSaveEnviado}
-                                  style={{ width:"100%", padding:"7px", background:envSaved?"#4a7c3f":"#c8b84a", border:"none", borderRadius:2, color:envSaved?"#fff":"#1a2e1a", fontSize:12, fontWeight:700, cursor:"pointer", ...T }}>
-                                  {envSaved?"✓ Salvo!":"💾 Salvar Enviado"}
-                                </button>
-                              </td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              );
-            })()}
+            {/* Bloco mês seguinte */}
+            {(isLast2 || isNext) && (
+              <>
+                <div style={{ fontSize:11, color: isNext?"#888":"#4a7c3f", letterSpacing:3, textTransform:"uppercase" as const, marginBottom:10, fontWeight:700 }}>
+                  📅 {getNextMonthName(dashWeek)}{!isNext && " — Projeção"}
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:14 }}>
+                  <DashPanel title={`PREVISÃO — ${getNextMonthName(dashWeek)}`}
+                    cols={["bg","bg_paytv","bg_digital"]} heads={["BG","Pay TV","Digital"]} totalCols={["bg","bg_digital"]}
+                    border={isNext?"#c8b84a":"#4a7c3f"} headerBg={isNext?"#c8b84a":"#4a7c3f"} headerColor={isNext?"#1a2e1a":"#fff"} rowBg={isNext?"#faf8e8":"#f5faf5"}
+                    envPrefix={isNext?"":"next_"} />
+                  <DashPanel title={`PREVISÃO HIGH — ${getNextMonthName(dashWeek)}`}
+                    cols={["bg_high","bg_high_paytv","bg_high_digital"]} heads={["BG HIGH","PayTV HIGH","Digital HIGH"]} totalCols={["bg_high","bg_high_digital"]}
+                    border={isNext?"#c8b84a":"#4a7c3f"} headerBg={isNext?"#c8b84a":"#4a7c3f"} headerColor={isNext?"#1a2e1a":"#fff"} rowBg={isNext?"#faf8e8":"#f5faf5"}
+                    envPrefix={isNext?"":"next_"} />
+                </div>
+              </>
+            )}
+
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(155px,1fr))", gap:8 }}>
-              {EXECUTIVES.map(ex => {
+              {weekData.map(ex => {
                 const entry  = allData[`${ex.name}__${dashWeek}`];
-                const hasBG  = !!entry?.values;
-                const hasOpp = !!(entry?.opps?.length && entry.opps.some((o:any)=>o.client));
+                const hasBG  = !!(entry && entry.values);
+                const hasOpp = !!(entry && entry.opps && entry.opps.some((o:any) => o.client));
                 return (
                   <div key={ex.id} style={{ padding:"9px 14px", background:hasBG?"#f0f8f0":"#fff", border:`1.5px solid ${hasBG?"#4a7c3f":"#ddd"}`, borderRadius:3 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
@@ -664,14 +614,13 @@ export default function App() {
 
         {dashTab==="opps" && (
           <div>
-            {/* Filtros */}
             <div style={{ display:"flex", gap:12, marginBottom:16, flexWrap:"wrap" as const }}>
               <div>
                 <label style={{ display:"block", fontSize:10, color:"#888", letterSpacing:2, textTransform:"uppercase" as const, marginBottom:5 }}>Executivo</label>
                 <select value={filterExec} onChange={e => setFilterExec(e.target.value)}
                   style={{ padding:"8px 12px", border:"1.5px solid #ddd", borderRadius:3, fontSize:13, color:"#333", background:"#fff", outline:"none", ...T }}>
                   <option value="Todos">Todos</option>
-                  {EXECUTIVES.map(e => <option key={e.id} value={e.name}>{e.name.split(" ")[0]} {e.name.split(" ")[1]}</option>)}
+                  {EXECUTIVES.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
                 </select>
               </div>
               <div>
@@ -700,7 +649,7 @@ export default function App() {
                   ))}
                 </select>
               </div>
-              {(filterExec !== "Todos" || filterPlat !== "Todas" || filterClient !== "Todos" || filterMonth !== "Todos") && (
+              {(filterExec!=="Todos"||filterPlat!=="Todas"||filterClient!=="Todos"||filterMonth!=="Todos") && (
                 <div style={{ display:"flex", alignItems:"flex-end" }}>
                   <button onClick={() => { setFilterExec("Todos"); setFilterPlat("Todas"); setFilterClient("Todos"); setFilterMonth("Todos"); }}
                     style={{ padding:"8px 14px", background:"#fff", border:"1.5px solid #ddd", borderRadius:3, color:"#888", fontSize:12, cursor:"pointer", ...T }}>
@@ -710,11 +659,10 @@ export default function App() {
               )}
               <div style={{ marginLeft:"auto", display:"flex", alignItems:"flex-end" }}>
                 <span style={{ fontSize:12, color:"#aaa", paddingBottom:10 }}>
-                  {allOpps.filter((o:any) => (filterExec==="Todos"||o.exec===filterExec) && (filterPlat==="Todas"||o.platform===filterPlat) && (filterClient==="Todos"||o.client===filterClient) && (filterMonth==="Todos"||o.month===filterMonth)).length} oportunidade(s)
+                  {allOpps.filter((o:any) => (filterExec==="Todos"||o.exec===filterExec)&&(filterPlat==="Todas"||o.platform===filterPlat)&&(filterClient==="Todos"||o.client===filterClient)&&(filterMonth==="Todos"||o.month===filterMonth)).length} oportunidade(s)
                 </span>
               </div>
             </div>
-
             {allOpps.length===0 ? (
               <div style={{ padding:"48px", textAlign:"center" as const, color:"#bbb", background:"#fff", border:"1.5px solid #e8e4d0", borderRadius:4 }}>
                 <div style={{ fontSize:32, marginBottom:12 }}>⭐</div>
@@ -722,9 +670,9 @@ export default function App() {
               </div>
             ) : (() => {
               const filtered = allOpps
-                .filter((o:any) => (filterExec==="Todos" || o.exec===filterExec) && (filterPlat==="Todas" || o.platform===filterPlat) && (filterClient==="Todos" || o.client===filterClient) && (filterMonth==="Todos" || o.month===filterMonth))
-                .sort((a:any, b:any) => parse(b.value) - parse(a.value));
-              return filtered.length === 0 ? (
+                .filter((o:any) => (filterExec==="Todos"||o.exec===filterExec)&&(filterPlat==="Todas"||o.platform===filterPlat)&&(filterClient==="Todos"||o.client===filterClient)&&(filterMonth==="Todos"||o.month===filterMonth))
+                .sort((a:any,b:any) => parse(b.value)-parse(a.value));
+              return filtered.length===0 ? (
                 <div style={{ padding:"32px", textAlign:"center" as const, color:"#bbb", background:"#fff", border:"1.5px solid #e8e4d0", borderRadius:4 }}>
                   <p style={{ margin:0, fontSize:14 }}>Nenhuma oportunidade encontrada com os filtros selecionados.</p>
                 </div>
@@ -734,16 +682,16 @@ export default function App() {
                     <thead>
                       <tr style={{ background:"#f7f5e8", borderBottom:"2px solid #e8e4d0" }}>
                         {["Executivo","Mês","Plataforma","Cliente","Detalhamento","Valor ↓"].map((h,i) => (
-                          <th key={h} style={{ ...thS, textAlign: i===5 ? ("center" as const) : ("left" as const), padding:"10px 16px" }}>{h}</th>
+                          <th key={h} style={{ ...thS, textAlign: i===5?("center" as const):("left" as const), padding:"10px 16px" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((o:any, i:number) => {
+                      {filtered.map((o:any,i:number) => {
                         const c = PLATFORM_COLOR[o.platform]||{} as any;
                         return (
                           <tr key={i} style={{ background:i%2===0?"#fafaf5":"#fff", borderBottom:"1px solid #f0ede0" }}>
-                            <td style={{ padding:"10px 16px", fontSize:13, fontWeight:600, color:"#333", whiteSpace:"nowrap" as const }}>{o.exec.split(" ")[0]} {o.exec.split(" ")[1]}</td>
+                            <td style={{ padding:"10px 16px", fontSize:13, fontWeight:600, color:"#333", whiteSpace:"nowrap" as const }}>{displayName(o.exec)}</td>
                             <td style={{ padding:"10px 12px", fontSize:12, color:"#666", whiteSpace:"nowrap" as const }}>{o.month||"—"}</td>
                             <td style={{ padding:"10px 12px" }}>
                               <span style={{ padding:"3px 10px", borderRadius:20, fontSize:11, fontWeight:700, background:c.bg, color:c.text, border:`1px solid ${c.border}`, whiteSpace:"nowrap" as const }}>{o.platform}</span>
