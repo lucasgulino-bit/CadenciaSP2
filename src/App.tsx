@@ -29,7 +29,7 @@ const firebaseConfig = {
   projectId: "cadencia-sp",
   storageBucket: "cadencia-sp.firebasestorage.app",
   messagingSenderId: "226124975510",
-  appId: "1:226124975510:web:d8f261d58d61777dd361b7",
+  appId: "1:226124975510:web:d8f261d58d61777dd361b7"
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
