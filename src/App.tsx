@@ -165,8 +165,10 @@ export default function App() {
   const [filterClient, setFilterClient] = useState("Todos");
   const [filterMonth, setFilterMonth]   = useState("Todos");
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    onValue(ref(db, "cadence_v2"),  snap => { if (snap.exists()) setAllData(snap.val()); });
+    onValue(ref(db, "cadence_v2"),  snap => { if (snap.exists()) setAllData(snap.val()); setLoading(false); });
     onValue(ref(db, "cadence_env"), snap => { if (snap.exists()) setEnviado(snap.val()); });
   }, []);
 
@@ -275,9 +277,9 @@ export default function App() {
           style={{ width:"100%", padding:"11px 14px", border:"1.5px solid #ddd", borderRadius:3, fontSize:14, color:"#333", marginBottom:28, background:"#fafafa", boxSizing:"border-box" as const, outline:"none" }}>
           {WEEKS.map(w => <option key={w.key} value={w.key}>{w.label} · {w.month}</option>)}
         </select>
-        <button onClick={handleEnter} disabled={!selectedExec}
-          style={{ width:"100%", padding:"13px", background: selectedExec?"#4a7c3f":"#ccc", border:"none", borderRadius:3, color:"#fff", fontSize:14, fontWeight:700, cursor: selectedExec?"pointer":"default", letterSpacing:1, ...T }}>
-          PREENCHER →
+        <button onClick={handleEnter} disabled={!selectedExec || loading}
+          style={{ width:"100%", padding:"13px", background: (selectedExec && !loading)?"#4a7c3f":"#ccc", border:"none", borderRadius:3, color:"#fff", fontSize:14, fontWeight:700, cursor: (selectedExec && !loading)?"pointer":"default", letterSpacing:1, ...T }}>
+          {loading ? "Carregando..." : "PREENCHER →"}
         </button>
         <div style={{ marginTop:16, textAlign:"center" as const }}>
           <button onClick={() => { setScreen("dashboard"); setDashWeek(selectedWeek); }}
