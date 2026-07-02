@@ -195,11 +195,37 @@ export default function App() {
   function removeOpp(id: any) { setOpps(opps.filter((o:any) => o.id !== id)); }
   function addOpp() { setOpps([...opps, emptyOpp()]); }
 
-  const weekData = EXECUTIVES.map(ex => ({
-    ...ex,
-    v:    allData[`${ex.name}__${dashWeek}`]?.values || {},
-    opps: allData[`${ex.name}__${dashWeek}`]?.opps   || [],
-  }));
+  // Executivos ativos na semana selecionada:
+  // Combina lista atual + qualquer exec com dados no Firebase para essa semana (histórico)
+  const ALL_KNOWN_FIELDS: Record<string, string[]> = {
+    "Bruno Duque":    ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+    "Julia Masone":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv", "bg_digital", "bg_high_digital"],
+    "Lucas Gulino":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+    "Raphael Jucá":   ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+    "Ricardo Caldas": ["bg", "bg_paytv", "bg_high", "bg_high_paytv"],
+    "Manuella Vidal": ["bg", "bg_paytv", "bg_high", "bg_high_paytv", "bg_digital", "bg_high_digital"],
+    "Lucas Cassone":  ["bg_digital", "bg_high_digital"],
+  };
+
+  // Get all exec names that have data for the selected week (from Firebase)
+  const historicNames = Object.keys(allData)
+    .filter(k => k.endsWith(`__${dashWeek}`))
+    .map(k => k.replace(`__${dashWeek}`, ""));
+
+  // Merge current executives with historic ones (no duplicates)
+  const currentNames  = EXECUTIVES.map(e => e.name);
+  const allExecNames  = [...new Set([...currentNames, ...historicNames])];
+
+  const weekData = allExecNames.map((name, idx) => {
+    const currentExec = EXECUTIVES.find(e => e.name === name);
+    return {
+      id:     currentExec?.id ?? 100 + idx,
+      name,
+      fields: currentExec?.fields ?? ALL_KNOWN_FIELDS[name] ?? ["bg"],
+      v:      allData[`${name}__${dashWeek}`]?.values || {},
+      opps:   allData[`${name}__${dashWeek}`]?.opps   || [],
+    };
+  });
 
   const colTotal = (col: string) => weekData.reduce((s,e) => s + parse((e.v as any)[col]), 0);
   const getEnv   = (col: string) => parse(envInputs[col]);
