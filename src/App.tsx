@@ -170,10 +170,13 @@ export default function App() {
     const key = `${selectedExec}__${selectedWeek}`;
     const ex = allData[key];
     const isNextMonth = isNextMonthWeek(selectedWeek);
-    // Se semana cruza o mês, dados ficam em values (mês seguinte é o principal)
-    // Nas últimas 2 semanas normais, mês atual em values e projeção em nextValues
-    setValues(isNextMonth ? {} : (ex?.values || {}));
-    setNextValues(isNextMonth ? (ex?.values || {}) : (ex?.nextValues || {}));
+    if (isNextMonth) {
+      setValues({});
+      setNextValues(ex?.values || {});
+    } else {
+      setValues(ex?.values || {});
+      setNextValues(ex?.nextValues || {});
+    }
     setOpps(ex?.opps?.length ? ex.opps : [emptyOpp()]);
     setSaved(false); setStep(1); setScreen("input");
   }
@@ -181,37 +184,31 @@ export default function App() {
   async function handleSaveStep1() {
     const key = `${selectedExec}__${selectedWeek}`;
     const isNextMonth = isNextMonthWeek(selectedWeek);
-    const record = {
+    const upd = { ...allData, [key]: {
       ...(allData[key]||{}),
       exec: selectedExec,
       week: selectedWeek,
       values: isNextMonth ? nextValues : values,
-      ...(!isNextMonth && { nextValues }),
+      nextValues: isNextMonth ? {} : nextValues,
       ts: new Date().toISOString()
-    };
-    const upd = { ...allData, [key]: record };
-    setAllData(upd);
-    await persistData(upd);
-    setStep(2);
+    }};
+    setAllData(upd); await persistData(upd); setStep(2);
   }
 
   async function handleSaveStep2() {
     const key = `${selectedExec}__${selectedWeek}`;
     const isNextMonth = isNextMonthWeek(selectedWeek);
-    const record = {
+    const upd = { ...allData, [key]: {
       ...(allData[key]||{}),
       exec: selectedExec,
       week: selectedWeek,
       values: isNextMonth ? nextValues : values,
-      ...(!isNextMonth && { nextValues }),
+      nextValues: isNextMonth ? {} : nextValues,
       opps,
       ts: new Date().toISOString()
-    };
-    const upd = { ...allData, [key]: record };
-    setAllData(upd);
-    await persistData(upd);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    }};
+    setAllData(upd); await persistData(upd);
+    setSaved(true); setTimeout(() => setSaved(false), 3000);
   }
 
   async function handleSaveEnviado() {
@@ -453,9 +450,14 @@ export default function App() {
   const isLast2 = isLastTwoWeeksOfMonth(dashWeek);
 
   const PanelTable = ({ cols, heads, totalCols, useNext }: { cols:string[], heads:string[], totalCols:string[], useNext:boolean }) => {
-    const getData = (ex: any) => useNext
-      ? (allData[`${ex.name}__${dashWeek}`]?.nextValues || {})
-      : ex.v;
+    const getData = (ex: any) => {
+      const entry = allData[`${ex.name}__${dashWeek}`] || {};
+      // isNext: semana 29/06, dados salvos em values
+      // useNext: projeção das últimas 2 semanas, dados em nextValues
+      if (isNext) return entry.values || {};
+      if (useNext) return entry.nextValues || {};
+      return ex.v;
+    };
     const tot = (col: string) => weekData.reduce((s,e) => s + parse(getData(e)[col]), 0);
     return (
       <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
