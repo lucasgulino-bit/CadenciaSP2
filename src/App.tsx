@@ -162,8 +162,12 @@ export default function App() {
 
   useEffect(() => { setEnvInputs(enviado[dashWeek] || {}); }, [dashWeek, enviado]);
 
-  async function persistData(data: any)    { try { await set(ref(db, "cadence_v2"),  data); } catch(e){} }
-  async function persistEnviado(data: any) { try { await set(ref(db, "cadence_env"), data); } catch(e){} }
+  async function persistData(key: string, record: any) {
+    try { await set(ref(db, `cadence_v2/${key}`), record); } catch(e) { console.error(e); }
+  }
+  async function persistEnviado(weekKey: string, record: any) {
+    try { await set(ref(db, `cadence_env/${weekKey}`), record); } catch(e) { console.error(e); }
+  }
 
   function handleEnter() {
     if (!selectedExec) return;
@@ -184,21 +188,23 @@ export default function App() {
   async function handleSaveStep1() {
     const key = `${selectedExec}__${selectedWeek}`;
     const isNextMonth = isNextMonthWeek(selectedWeek);
-    const upd = { ...allData, [key]: {
+    const record = {
       ...(allData[key]||{}),
       exec: selectedExec,
       week: selectedWeek,
       values: isNextMonth ? nextValues : values,
       nextValues: isNextMonth ? {} : nextValues,
       ts: new Date().toISOString()
-    }};
-    setAllData(upd); await persistData(upd); setStep(2);
+    };
+    setAllData((prev: any) => ({ ...prev, [key]: record }));
+    await persistData(key, record);
+    setStep(2);
   }
 
   async function handleSaveStep2() {
     const key = `${selectedExec}__${selectedWeek}`;
     const isNextMonth = isNextMonthWeek(selectedWeek);
-    const upd = { ...allData, [key]: {
+    const record = {
       ...(allData[key]||{}),
       exec: selectedExec,
       week: selectedWeek,
@@ -206,14 +212,17 @@ export default function App() {
       nextValues: isNextMonth ? {} : nextValues,
       opps,
       ts: new Date().toISOString()
-    }};
-    setAllData(upd); await persistData(upd);
-    setSaved(true); setTimeout(() => setSaved(false), 3000);
+    };
+    setAllData((prev: any) => ({ ...prev, [key]: record }));
+    await persistData(key, record);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   }
 
   async function handleSaveEnviado() {
-    const upd = { ...enviado, [dashWeek]: envInputs };
-    setEnviado(upd); await persistEnviado(upd);
+    const record = { ...envInputs };
+    setEnviado((prev: any) => ({ ...prev, [dashWeek]: record }));
+    await persistEnviado(dashWeek, record);
     setEnvSaved(true); setTimeout(() => setEnvSaved(false), 2500);
   }
 
