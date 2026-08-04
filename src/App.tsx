@@ -34,13 +34,17 @@ const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
 const EXECUTIVES = [
-  { id: 1, name: "Bruno Duque",    fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 2, name: "Lucas Gulino",   fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 3, name: "Raphael Jucá",   fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 4, name: "Ricardo Caldas", fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 5, name: "Manuella Vidal", fields: ["bg", "bg_paytv", "bg_high", "bg_high_paytv"] },
-  { id: 6, name: "Lucas Cassone",  fields: ["bg_digital", "bg_high_digital"] },
+  { id: 1, name: "Bruno Duque",    fields: ["bg", "bg_paytv", "bg_digital", "bg_high", "bg_high_paytv", "bg_high_digital"] },
+  { id: 2, name: "Lucas Gulino",   fields: ["bg", "bg_paytv", "bg_digital", "bg_high", "bg_high_paytv", "bg_high_digital"] },
+  { id: 3, name: "Raphael Jucá",   fields: ["bg", "bg_paytv", "bg_digital", "bg_high", "bg_high_paytv", "bg_high_digital"] },
+  { id: 4, name: "Ricardo Caldas", fields: ["bg", "bg_paytv", "bg_digital", "bg_high", "bg_high_paytv", "bg_high_digital"] },
+  { id: 5, name: "Manuella Vidal", fields: ["bg", "bg_paytv", "bg_digital", "bg_high", "bg_high_paytv", "bg_high_digital"] },
 ];
+
+// Lucas Cassone removido da lista ativa, mas mantém histórico no Firebase
+const ALL_KNOWN_FIELDS: Record<string, string[]> = {
+  "Lucas Cassone": ["bg_digital", "bg_high_digital"],
+};
 
 const FIELD_LABELS: Record<string, string> = {
   bg: "BG", bg_paytv: "BG Pay TV", bg_high: "BG High",
